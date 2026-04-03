@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'models/expense_model.dart';
 import 'models/budget_model.dart';
+import 'models/subscription_model.dart';
 import 'providers/expense_provider.dart';
 import 'screens/main_screen.dart';
 
@@ -14,10 +15,12 @@ void main() async {
   // Register Adapters
   Hive.registerAdapter(ExpenseModelAdapter());
   Hive.registerAdapter(BudgetModelAdapter());
+  Hive.registerAdapter(SubscriptionModelAdapter());
   
   // Open Boxes
   await Hive.openBox<ExpenseModel>(ExpenseProvider.expenseBoxName);
   await Hive.openBox<BudgetModel>(ExpenseProvider.budgetBoxName);
+  await Hive.openBox<SubscriptionModel>(ExpenseProvider.subscriptionBoxName);
   
   runApp(
     MultiProvider(
