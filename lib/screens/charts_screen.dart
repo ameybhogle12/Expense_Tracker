@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
-import '../models/category_constants.dart';
 
 class ChartsScreen extends StatelessWidget {
   const ChartsScreen({super.key});
@@ -63,13 +62,13 @@ class ChartsScreen extends StatelessWidget {
 
     if (total == 0) return const Center(child: Text('No spending this month.'));
 
-    for (final category in CategoryConstants.categories) {
-      final spent = provider.getCategorySpending(category);
+    for (final category in provider.categories) {
+      final spent = provider.getCategorySpending(category.name);
       if (spent > 0) {
         final percentage = (spent / total) * 100;
         sections.add(
           PieChartSectionData(
-            color: CategoryConstants.getColorForCategory(category),
+            color: Color(category.colorValue),
             value: spent,
             title: '${percentage.toStringAsFixed(1)}%',
             radius: 50,

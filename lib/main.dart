@@ -5,8 +5,11 @@ import 'package:provider/provider.dart';
 import 'models/expense_model.dart';
 import 'models/budget_model.dart';
 import 'models/subscription_model.dart';
+import 'models/category_model.dart';
+import 'models/goal_model.dart';
+import 'models/emi_model.dart';
 import 'providers/expense_provider.dart';
-import 'screens/main_screen.dart';
+import 'screens/auth_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,11 +19,18 @@ void main() async {
   Hive.registerAdapter(ExpenseModelAdapter());
   Hive.registerAdapter(BudgetModelAdapter());
   Hive.registerAdapter(SubscriptionModelAdapter());
+  Hive.registerAdapter(CategoryModelAdapter());
+  Hive.registerAdapter(GoalModelAdapter());
+  Hive.registerAdapter(EmiModelAdapter());
   
   // Open Boxes
   await Hive.openBox<ExpenseModel>(ExpenseProvider.expenseBoxName);
   await Hive.openBox<BudgetModel>(ExpenseProvider.budgetBoxName);
   await Hive.openBox<SubscriptionModel>(ExpenseProvider.subscriptionBoxName);
+  await Hive.openBox<CategoryModel>(ExpenseProvider.categoryBoxName);
+  await Hive.openBox<GoalModel>(ExpenseProvider.goalBoxName);
+  await Hive.openBox<EmiModel>(ExpenseProvider.emiBoxName);
+  await Hive.openBox('settings_v1');
   
   runApp(
     MultiProvider(
@@ -55,7 +65,7 @@ class MyApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const MainScreen(),
+      home: const AuthWrapper(),
     );
   }
 }

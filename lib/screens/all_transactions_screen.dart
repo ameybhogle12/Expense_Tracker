@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
-import '../models/category_constants.dart';
 
 class AllTransactionsScreen extends StatelessWidget {
   const AllTransactionsScreen({super.key});
@@ -24,9 +23,10 @@ class AllTransactionsScreen extends StatelessWidget {
               itemCount: transactions.length,
               itemBuilder: (context, index) {
                 final t = transactions[index];
-                final color = t.isIncome ? Colors.green : CategoryConstants.getColorForCategory(t.category);
+                final catObj = context.read<ExpenseProvider>().getCategoryByName(t.category);
+                final color = t.isIncome ? Colors.green : (catObj != null ? Color(catObj.colorValue) : Colors.grey);
                 final title = t.note.isNotEmpty ? t.note : (t.isIncome ? 'Added Funds' : t.category);
-                final icon = t.isIncome ? Icons.account_balance_wallet : CategoryConstants.getIconForCategory(t.category);
+                final icon = t.isIncome ? Icons.account_balance_wallet : (catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.attach_money);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),

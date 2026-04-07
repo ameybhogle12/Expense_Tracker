@@ -7,6 +7,7 @@ import '../providers/expense_provider.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/budgets_overview.dart';
 import '../widgets/recent_transactions.dart';
+import 'settings_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -31,7 +32,8 @@ class HomeScreen extends StatelessWidget {
         ]);
       }
 
-      String csvData = const ListToCsvConverter().convert(rows);
+      // String csvData = const ListToCsvConverter().convert(rows);
+      String csvData = ListToCsvConverter().convert(rows);
       
       Directory? dir = await getDownloadsDirectory();
       dir ??= await getApplicationDocumentsDirectory();
@@ -70,7 +72,12 @@ class HomeScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
+            },
           )
         ],
       ),

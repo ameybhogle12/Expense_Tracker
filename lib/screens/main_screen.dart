@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'charts_screen.dart';
 import 'subscriptions_screen.dart';
+import 'goals_screen.dart';
 import '../widgets/add_expense_form.dart';
 
 class MainScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     ChartsScreen(),
     SubscriptionsScreen(),
+    GoalsScreen(),
   ];
 
   void _openAddExpenseOverlay() {
@@ -33,7 +35,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_currentIndex],
-      floatingActionButton: _currentIndex == 2 
+      floatingActionButton: _currentIndex >= 2 
           ? null 
           : FloatingActionButton(
               onPressed: _openAddExpenseOverlay,
@@ -61,6 +63,11 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.event_repeat_outlined),
             selectedIcon: Icon(Icons.event_repeat),
             label: 'Subs',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.flag_outlined),
+            selectedIcon: Icon(Icons.flag),
+            label: 'Goals',
           ),
         ],
       ),

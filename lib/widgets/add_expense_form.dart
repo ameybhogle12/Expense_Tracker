@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/expense_model.dart';
-import '../models/category_constants.dart';
 import '../providers/expense_provider.dart';
 
 enum TransactionType { expense, income, transfer }
@@ -18,7 +17,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
-  String _selectedCategory = CategoryConstants.categories.first;
+  String? _selectedCategory;
   TransactionType _transactionType = TransactionType.expense;
   
   String _paymentMethod = 'UPI Lite'; 
@@ -90,7 +89,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
         final newTransaction = ExpenseModel(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
           amount: enteredAmount,
-          category: _transactionType == TransactionType.income ? 'Allowance/Income' : _selectedCategory,
+          category: _transactionType == TransactionType.income ? 'Allowance/Income' : (_selectedCategory ?? context.read<ExpenseProvider>().categories.first.name),
           date: _selectedDate,
           note: _noteController.text.trim(),
           paymentMethod: _paymentMethod,
@@ -202,20 +201,20 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: _selectedCategory,
+                      value: _selectedCategory ?? context.watch<ExpenseProvider>().categories.first.name,
                       decoration: const InputDecoration(
                         labelText: 'Category',
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
-                      items: CategoryConstants.categories.map((category) {
+                      items: context.watch<ExpenseProvider>().categories.map((catObj) {
                         return DropdownMenuItem(
-                          value: category,
+                          value: catObj.name,
                           child: Row(
                             children: [
-                              Icon(CategoryConstants.getIconForCategory(category), size: 16),
+                              Icon(IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons'), size: 16),
                               const SizedBox(width: 8),
-                              Text(category, style: const TextStyle(fontSize: 13)),
+                              Text(catObj.name, style: const TextStyle(fontSize: 13)),
                             ],
                           ),
                         );

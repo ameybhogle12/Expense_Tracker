@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
-import '../models/category_constants.dart';
 
 class BudgetsOverview extends StatelessWidget {
   const BudgetsOverview({super.key});
@@ -12,7 +11,8 @@ class BudgetsOverview extends StatelessWidget {
     final provider = context.watch<ExpenseProvider>();
     final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
-    final activeCategories = CategoryConstants.categories
+    final activeCategories = provider.categories
+        .map((c) => c.name)
         .where((c) => provider.getCategorySpending(c) > 0 || provider.getBudgetForCategory(c) != null)
         .toList();
 
@@ -30,7 +30,8 @@ class BudgetsOverview extends StatelessWidget {
           final spent = provider.getCategorySpending(category);
           final budget = provider.getBudgetForCategory(category)?.monthlyLimit ?? 500.0; // Default budget if unset
           final progress = (spent / budget).clamp(0.0, 1.0);
-          final color = CategoryConstants.getColorForCategory(category);
+          final catObj = provider.getCategoryByName(category);
+          final color = catObj != null ? Color(catObj.colorValue) : Colors.grey;
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0),
@@ -42,7 +43,7 @@ class BudgetsOverview extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Icon(CategoryConstants.getIconForCategory(category), color: color, size: 20),
+                        Icon(catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.category, color: color, size: 20),
                         const SizedBox(width: 8),
                         Text(category, style: const TextStyle(fontWeight: FontWeight.w500)),
                       ],

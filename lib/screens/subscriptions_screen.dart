@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../models/subscription_model.dart';
-import '../models/category_constants.dart';
 
 class SubscriptionsScreen extends StatelessWidget {
   const SubscriptionsScreen({super.key});
@@ -33,7 +32,8 @@ class SubscriptionsScreen extends StatelessWidget {
               itemCount: subscriptions.length,
               itemBuilder: (context, index) {
                 final sub = subscriptions[index];
-                final color = CategoryConstants.getColorForCategory(sub.category);
+                final catObj = context.read<ExpenseProvider>().getCategoryByName(sub.category);
+                final color = catObj != null ? Color(catObj.colorValue) : Colors.grey;
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12.0),
@@ -53,7 +53,7 @@ class SubscriptionsScreen extends StatelessWidget {
                       contentPadding: EdgeInsets.zero,
                       leading: CircleAvatar(
                         backgroundColor: color.withOpacity(0.2),
-                        child: Icon(CategoryConstants.getIconForCategory(sub.category), color: color),
+                        child: Icon(catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.subscriptions, color: color),
                       ),
                       title: Text(sub.note.isNotEmpty ? sub.note : sub.category, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text('Billed on day ${sub.paymentDay} • ${sub.paymentMethod}'),
@@ -85,7 +85,7 @@ class AddSubscriptionForm extends StatefulWidget {
 class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
-  String _selectedCategory = CategoryConstants.categories.first;
+  String? _selectedCategory;
   String _paymentMethod = 'Main Bank'; 
   int _paymentDay = DateTime.now().day; 
   TimeOfDay _paymentTime = const TimeOfDay(hour: 9, minute: 0); 
@@ -117,7 +117,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
       final newSub = SubscriptionModel(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         amount: enteredAmount,
-        category: _selectedCategory,
+        category: _selectedCategory ?? context.read<ExpenseProvider>().categories.first.name,
         paymentMethod: _paymentMethod,
         note: _noteController.text.trim(),
         paymentDay: _paymentDay,
@@ -164,9 +164,9 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              value: _selectedCategory,
+              value: _selectedCategory ?? context.watch<ExpenseProvider>().categories.first.name,
               decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16)),
-              items: CategoryConstants.categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
+              items: context.watch<ExpenseProvider>().categories.map((c) => DropdownMenuItem(value: c.name, child: Text(c.name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
               onChanged: (val) => setState(() => _selectedCategory = val!),
             ),
             const SizedBox(height: 16),
