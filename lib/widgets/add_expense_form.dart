@@ -207,6 +207,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                         border: OutlineInputBorder(),
                         contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
+                      isExpanded: true,
                       items: context.watch<ExpenseProvider>().categories.map((catObj) {
                         return DropdownMenuItem(
                           value: catObj.name,
@@ -214,7 +215,13 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                             children: [
                               Icon(IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons'), size: 16),
                               const SizedBox(width: 8),
-                              Text(catObj.name, style: const TextStyle(fontSize: 13)),
+                              Expanded(
+                                child: Text(
+                                  catObj.name, 
+                                  style: const TextStyle(fontSize: 13),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
                             ],
                           ),
                         );

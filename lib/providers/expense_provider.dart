@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import '../services/notification_service.dart';
+import '../services/log_processor.dart';
 import '../models/expense_model.dart';
 import '../models/budget_model.dart';
 import '../models/subscription_model.dart';
@@ -15,12 +18,23 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
   static const String goalBoxName = 'goals_v1';
   static const String emiBoxName = 'emis_v1';
 
+  Timer? _liveTimer;
+
   ExpenseProvider() {
     WidgetsBinding.instance.addObserver(this);
+    _startLiveTimer();
+  }
+
+  void _startLiveTimer() {
+    _liveTimer?.cancel();
+    _liveTimer = Timer.periodic(const Duration(minutes: 1), (timer) async {
+      await _syncAutomatedLogs(isBackground: false);
+    });
   }
 
   @override
   void dispose() {
+    _liveTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -28,8 +42,10 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _processSubscriptions();
-      _processEMIs();
+      _syncAutomatedLogs(isBackground: false);
+      _startLiveTimer(); // Restart timer on resume
+    } else if (state == AppLifecycleState.paused) {
+      _liveTimer?.cancel();
     }
   }
 
@@ -92,81 +108,23 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     
     _transactions.sort((a, b) => b.date.compareTo(a.date));
     
-    await _processSubscriptions();
-    await _processEMIs();
+    await LogProcessor.processAll(isBackground: false);
+    // Reload transactions after processing
+    _transactions = expenseBox.values.toList();
+    _transactions.sort((a, b) => b.date.compareTo(a.date));
     
     notifyListeners();
   }
 
-  Future<void> _processSubscriptions() async {
-    final now = DateTime.now();
-    bool addedAny = false;
-    final box = Hive.box<ExpenseModel>(expenseBoxName);
-
-    for (var sub in _subscriptions) {
-      if (now.day >= sub.paymentDay) {
-        if (now.day > sub.paymentDay || (now.day == sub.paymentDay && now.hour * 60 + now.minute >= sub.paymentHour * 60 + sub.paymentMinute)) {
-          if (sub.lastProcessed == null || sub.lastProcessed!.year != now.year || sub.lastProcessed!.month != now.month) {
-            final newTransaction = ExpenseModel(
-              id: 'sub_${sub.id}_${now.year}${now.month}',
-              amount: sub.amount,
-              category: sub.category,
-              date: DateTime(now.year, now.month, sub.paymentDay, sub.paymentHour, sub.paymentMinute),
-              note: sub.note,
-              paymentMethod: sub.paymentMethod,
-              isIncome: false,
-            );
-            
-            await box.add(newTransaction);
-            _transactions.insert(0, newTransaction);
-            addedAny = true;
-            
-            sub.lastProcessed = now;
-            await sub.save();
-          }
-        }
-      }
-    }
+  Future<void> _syncAutomatedLogs({bool isBackground = true}) async {
+    await LogProcessor.processAll(isBackground: isBackground);
     
-    if (addedAny) {
-      _transactions.sort((a, b) => b.date.compareTo(a.date));
-    }
-  }
-
-  Future<void> _processEMIs() async {
-    final now = DateTime.now();
-    bool addedAny = false;
-    final box = Hive.box<ExpenseModel>(expenseBoxName);
-
-    for (var emi in _emis) {
-      if (emi.monthsPaid < emi.totalMonths) {
-        if (now.day >= emi.paymentDay) {
-          if (emi.lastProcessed == null || emi.lastProcessed!.year != now.year || emi.lastProcessed!.month != now.month) {
-            final newTransaction = ExpenseModel(
-              id: 'emi_${emi.id}_${now.year}${now.month}',
-              amount: emi.monthlyInstallment,
-              category: 'Other', 
-              date: DateTime(now.year, now.month, emi.paymentDay),
-              note: 'EMI: ${emi.itemName} (${emi.monthsPaid + 1}/${emi.totalMonths})',
-              paymentMethod: emi.paymentMethod,
-              isIncome: false,
-            );
-            
-            await box.add(newTransaction);
-            _transactions.insert(0, newTransaction);
-            addedAny = true;
-            
-            emi.monthsPaid += 1;
-            emi.lastProcessed = now;
-            await emi.save();
-          }
-        }
-      }
-    }
+    // Crucial: Reload transactions from the database so the UI actually sees them!
+    final expenseBox = Hive.box<ExpenseModel>(expenseBoxName);
+    _transactions = expenseBox.values.toList();
+    _transactions.sort((a, b) => b.date.compareTo(a.date));
     
-    if (addedAny) {
-      _transactions.sort((a, b) => b.date.compareTo(a.date));
-    }
+    notifyListeners();
   }
 
   Future<void> addExpense(ExpenseModel transaction) async {
@@ -187,7 +145,7 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     final box = Hive.box<SubscriptionModel>(subscriptionBoxName);
     await box.add(sub);
     _subscriptions.add(sub);
-    await _processSubscriptions(); 
+    await _syncAutomatedLogs(isBackground: false); 
     notifyListeners();
   }
 
@@ -284,7 +242,7 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     final box = Hive.box<EmiModel>(emiBoxName);
     await box.add(emi);
     _emis.add(emi);
-    await _processEMIs();
+    await _syncAutomatedLogs(isBackground: false);
     notifyListeners();
   }
 

@@ -11,6 +11,13 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(':app')
+
+    // Automatically inject namespace for deprecated plugins without causing evaluate errors
+    project.plugins.withId("com.android.library") {
+        if (project.android.namespace == null) {
+            project.android.namespace = project.group.toString()
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

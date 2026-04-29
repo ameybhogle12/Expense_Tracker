@@ -29,12 +29,12 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     setState(() {
       _isSettingsLoaded = true;
     });
-    
+
     if (_useBiometrics) {
       _authenticate();
     } else {
       setState(() {
-        _isAuthenticated = true; 
+        _isAuthenticated = true;
       });
     }
   }
@@ -42,17 +42,18 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   Future<void> _authenticate() async {
     try {
       final bool canAuthenticateWithBiometrics = await _auth.canCheckBiometrics;
-      final bool canAuthenticate = canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
-      
+      final bool canAuthenticate =
+          canAuthenticateWithBiometrics || await _auth.isDeviceSupported();
+
       if (!canAuthenticate) {
         setState(() => _isAuthenticated = true);
         return;
       }
-      
+
       final bool didAuthenticate = await _auth.authenticate(
         localizedReason: 'Please authenticate to access your financial data',
       );
-      
+
       if (didAuthenticate) {
         setState(() => _isAuthenticated = true);
       }
@@ -68,7 +69,8 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.inactive) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
       if (_useBiometrics) {
         setState(() {
           _isAuthenticated = false;
@@ -92,11 +94,11 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
     if (!_isSettingsLoaded) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     if (_isAuthenticated) {
       return const MainScreen();
     }
-    
+
     return Scaffold(
       body: Center(
         child: Column(
@@ -104,7 +106,8 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
           children: [
             const Icon(Icons.lock, size: 80, color: Colors.deepPurple),
             const SizedBox(height: 24),
-            const Text('App Locked', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+            const Text('App Locked',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             const Text('Please authenticate to continue'),
             const SizedBox(height: 32),

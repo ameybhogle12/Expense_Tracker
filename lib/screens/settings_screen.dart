@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import 'manage_categories_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -39,6 +41,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _useBiometrics,
             onChanged: _toggleBiometrics,
             secondary: const Icon(Icons.security),
+          ),
+          const Divider(),
+          Consumer<ThemeProvider>(
+            builder: (context, themeProvider, child) {
+              return ListTile(
+                title: const Text('Theme Mode'),
+                subtitle: Text('Current: ${themeProvider.themeMode.name.toUpperCase()}'),
+                leading: const Icon(Icons.palette),
+                trailing: DropdownButton<ThemeMode>(
+                  value: themeProvider.themeMode,
+                  onChanged: (ThemeMode? newValue) {
+                    if (newValue != null) {
+                      themeProvider.setThemeMode(newValue);
+                    }
+                  },
+                  items: ThemeMode.values.map((ThemeMode mode) {
+                    return DropdownMenuItem<ThemeMode>(
+                      value: mode,
+                      child: Text(mode.name.toUpperCase()),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
           ),
           const Divider(),
           ListTile(
