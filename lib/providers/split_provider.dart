@@ -71,11 +71,71 @@ class SplitProvider extends ChangeNotifier {
     await loadData();
   }
 
+  /// Removes a member from a trip AND scrubs them from all expense splits.
+  /// Expenses they paid for are reassigned to no-one (deleted).
+  /// Returns a summary of affected expenses for UI feedback.
+  Future<int> removeMemberFromTrip(String tripId, String memberName) async {
+    final tripBox = Hive.box<SplitTripModel>(tripBoxName);
+    final expenseBox = Hive.box<SplitExpenseModel>(expenseBoxName);
+
+    // 1. Remove from trip members list
+    final trip = tripBox.values.firstWhere((t) => t.id == tripId);
+    final updatedMembers = List<String>.from(trip.members)..remove(memberName);
+    final updatedTrip = SplitTripModel(
+      id: trip.id,
+      name: trip.name,
+      members: updatedMembers,
+      createdAt: trip.createdAt,
+    );
+    await trip.delete();
+    await tripBox.add(updatedTrip);
+
+    // 2. Handle expenses this member is involved in
+    final tripExpenses = expenseBox.values.where((e) => e.tripId == tripId).toList();
+    int affectedCount = 0;
+
+    for (final expense in tripExpenses) {
+      if (expense.paidBy == memberName) {
+        // They paid for this expense — delete it entirely
+        await expense.delete();
+        affectedCount++;
+      } else if (expense.splitAmong.contains(memberName)) {
+        // They're in the split — remove them and re-save
+        final updatedSplit = List<String>.from(expense.splitAmong)..remove(memberName);
+        if (updatedSplit.isEmpty) {
+          await expense.delete();
+        } else {
+          final updatedExpense = SplitExpenseModel(
+            id: expense.id,
+            tripId: expense.tripId,
+            amount: expense.amount,
+            description: expense.description,
+            paidBy: expense.paidBy,
+            splitAmong: updatedSplit,
+            date: expense.date,
+          );
+          final key = expenseBox.keys.firstWhere((k) => expenseBox.get(k)?.id == expense.id);
+          await expenseBox.put(key, updatedExpense);
+        }
+        affectedCount++;
+      }
+    }
+
+    await loadData();
+    return affectedCount;
+  }
+
   // ─── Expense CRUD ───────────────────────────────────────────
 
   Future<void> addExpense(SplitExpenseModel expense) async {
     final box = Hive.box<SplitExpenseModel>(expenseBoxName);
     await box.add(expense);
+    await loadData();
+  }
+
+  Future<void> updateExpense(SplitExpenseModel updatedExpense) async {
+    // Model instance update
+    await updatedExpense.save();
     await loadData();
   }
 
@@ -107,44 +167,54 @@ class SplitProvider extends ChangeNotifier {
     final Map<String, double> balances = {};
 
     for (final expense in tripExpenses) {
-      final perPerson = expense.amount / expense.splitAmong.length;
+      // Round per-person share to 2 decimal places immediately.
+      // This prevents floating-point drift (e.g. 1000÷3 = 333.3333...)
+      // from accumulating into phantom debts over many expenses.
+      final perPerson = double.parse(
+        (expense.amount / expense.splitAmong.length).toStringAsFixed(2),
+      );
 
       // The payer paid the full amount
       balances[expense.paidBy] = (balances[expense.paidBy] ?? 0) + expense.amount;
 
-      // Each person in the split owes their share
+      // Each person in the split owes their rounded share
       for (final person in expense.splitAmong) {
         balances[person] = (balances[person] ?? 0) - perPerson;
       }
     }
 
-    return balances;
+    // Final pass: snap any balance within ±0.02 of zero to exactly 0.0
+    // This catches any residual rounding from multi-expense accumulation.
+    return balances.map((k, v) => MapEntry(k, v.abs() < 0.02 ? 0.0 : v));
   }
 
   // ─── Settlement Algorithm (Greedy) ──────────────────────────
 
   /// Returns the minimum list of transactions to settle all debts.
+  /// The sum of all balances always equals 0 (conservation of money).
   List<Settlement> getSettlements(String tripId) {
     final balances = getBalances(tripId);
     final List<Settlement> settlements = [];
 
     // Separate into creditors (+ve balance) and debtors (-ve balance)
+    // Use 0.5 paisa (0.005) as the ignore threshold — anything smaller
+    // is floating-point noise, not a real debt.
     final creditors = <MapEntry<String, double>>[];
     final debtors = <MapEntry<String, double>>[];
 
     for (final entry in balances.entries) {
-      if (entry.value > 0.01) {
+      if (entry.value > 0.005) {
         creditors.add(entry);
-      } else if (entry.value < -0.01) {
+      } else if (entry.value < -0.005) {
         debtors.add(MapEntry(entry.key, -entry.value)); // make positive
       }
     }
 
-    // Sort descending by amount
+    // Sort descending so largest debts/credits are handled first
     creditors.sort((a, b) => b.value.compareTo(a.value));
     debtors.sort((a, b) => b.value.compareTo(a.value));
 
-    // Greedy matching
+    // Greedy two-pointer matching
     int i = 0, j = 0;
     final cAmounts = creditors.map((e) => e.value).toList();
     final dAmounts = debtors.map((e) => e.value).toList();
@@ -152,17 +222,23 @@ class SplitProvider extends ChangeNotifier {
     while (i < creditors.length && j < debtors.length) {
       final transfer = cAmounts[i] < dAmounts[j] ? cAmounts[i] : dAmounts[j];
 
-      settlements.add(Settlement(
-        from: debtors[j].key,
-        to: creditors[i].key,
-        amount: double.parse(transfer.toStringAsFixed(2)),
-      ));
+      // Round to nearest paisa before recording
+      final rounded = double.parse(transfer.toStringAsFixed(2));
+
+      if (rounded > 0) {
+        settlements.add(Settlement(
+          from: debtors[j].key,
+          to: creditors[i].key,
+          amount: rounded,
+        ));
+      }
 
       cAmounts[i] -= transfer;
       dAmounts[j] -= transfer;
 
-      if (cAmounts[i] < 0.01) i++;
-      if (dAmounts[j] < 0.01) j++;
+      // Move pointer when a balance is effectively zero
+      if (cAmounts[i] < 0.005) i++;
+      if (dAmounts[j] < 0.005) j++;
     }
 
     return settlements;

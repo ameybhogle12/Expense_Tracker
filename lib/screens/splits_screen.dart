@@ -153,24 +153,36 @@ class SplitsScreen extends StatelessWidget {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 12),
-                            // Member chips
+                            const SizedBox(height: 10),
+                            // Member avatars — compact row of circles with initials
                             Wrap(
                               spacing: 6,
-                              runSpacing: 4,
+                              runSpacing: 6,
                               children: trip.members.map((member) {
-                                return Chip(
-                                  label: Text(member, style: const TextStyle(fontSize: 12)),
-                                  avatar: CircleAvatar(
-                                    backgroundColor: _getAvatarColor(member, colorScheme),
-                                    child: Text(
-                                      member[0].toUpperCase(),
-                                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                                    ),
+                                return Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: _getAvatarColor(member, colorScheme).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
-                                  padding: EdgeInsets.zero,
-                                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  visualDensity: VisualDensity.compact,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 10,
+                                        backgroundColor: _getAvatarColor(member, colorScheme),
+                                        child: Text(
+                                          member[0].toUpperCase(),
+                                          style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Text(
+                                        member,
+                                        style: TextStyle(fontSize: 11, color: colorScheme.onSurface),
+                                      ),
+                                    ],
+                                  ),
                                 );
                               }).toList(),
                             ),
@@ -190,76 +202,9 @@ class SplitsScreen extends StatelessWidget {
   }
 
   void _showCreateTripDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final membersController = TextEditingController();
-
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('New Trip'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Trip Name',
-                hintText: 'e.g. Lonavala Day Trip',
-                border: OutlineInputBorder(),
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: membersController,
-              decoration: const InputDecoration(
-                labelText: 'Members',
-                hintText: 'Amey, Rahul, Sneha',
-                border: OutlineInputBorder(),
-                helperText: 'Separate names with commas',
-              ),
-              textCapitalization: TextCapitalization.words,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              final name = nameController.text.trim();
-              final membersRaw = membersController.text.trim();
-              if (name.isEmpty || membersRaw.isEmpty) return;
-
-              final members = membersRaw
-                  .split(',')
-                  .map((m) => m.trim())
-                  .where((m) => m.isNotEmpty)
-                  .toList();
-
-              if (members.length < 2) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Add at least 2 members!')),
-                );
-                return;
-              }
-
-              final trip = SplitTripModel(
-                id: 'trip_${DateTime.now().microsecondsSinceEpoch}',
-                name: name,
-                members: members,
-                createdAt: DateTime.now(),
-              );
-
-              context.read<SplitProvider>().addTrip(trip);
-              Navigator.pop(ctx);
-            },
-            child: const Text('Create'),
-          ),
-        ],
-      ),
+      builder: (ctx) => const _CreateTripDialog(),
     );
   }
 
@@ -275,5 +220,171 @@ class SplitsScreen extends StatelessWidget {
       Colors.brown,
     ];
     return colors[name.hashCode.abs() % colors.length];
+  }
+}
+
+// ─── Stateful Create Trip Dialog ──────────────────────────────
+// Uses chip-based member input: type a name → press Enter → chip appears
+class _CreateTripDialog extends StatefulWidget {
+  const _CreateTripDialog();
+
+  @override
+  State<_CreateTripDialog> createState() => _CreateTripDialogState();
+}
+
+class _CreateTripDialogState extends State<_CreateTripDialog> {
+  final _nameController = TextEditingController();
+  final _memberController = TextEditingController();
+  final _memberFocus = FocusNode();
+  final List<String> _members = [];
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _memberController.dispose();
+    _memberFocus.dispose();
+    super.dispose();
+  }
+
+  void _addMember() {
+    final name = _memberController.text.trim();
+    if (name.isEmpty) return;
+    if (_members.contains(name)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$name is already added!')),
+      );
+      return;
+    }
+    setState(() {
+      _members.add(name);
+      _memberController.clear();
+    });
+    _memberFocus.requestFocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return AlertDialog(
+      title: const Text('New Trip'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _nameController,
+              decoration: const InputDecoration(
+                labelText: 'Trip Name',
+                hintText: 'e.g. Lonavala Day Trip',
+                border: OutlineInputBorder(),
+              ),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            // ─── Member Input with Add button ───────────────
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _memberController,
+                    focusNode: _memberFocus,
+                    decoration: InputDecoration(
+                      labelText: 'Add Member',
+                      hintText: 'e.g. Rahul',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.person_add),
+                        onPressed: _addMember,
+                      ),
+                    ),
+                    textCapitalization: TextCapitalization.words,
+                    onSubmitted: (_) => _addMember(),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // ─── Member Chips ────────────────────────────────
+            if (_members.isEmpty)
+              Text(
+                'Type a name and press Enter to add',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: colorScheme.onSurface.withOpacity(0.4),
+                ),
+              )
+            else
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: _members.map((name) {
+                  return InputChip(
+                    label: Text(name, style: const TextStyle(fontSize: 13)),
+                    avatar: CircleAvatar(
+                      backgroundColor: colorScheme.primary,
+                      child: Text(
+                        name[0].toUpperCase(),
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                    onDeleted: () {
+                      setState(() => _members.remove(name));
+                    },
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  );
+                }).toList(),
+              ),
+            if (_members.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  '${_members.length} member${_members.length == 1 ? '' : 's'} added',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            final name = _nameController.text.trim();
+            if (name.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Enter a trip name!')),
+              );
+              return;
+            }
+            if (_members.length < 2) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Add at least 2 members!')),
+              );
+              return;
+            }
+
+            final trip = SplitTripModel(
+              id: 'trip_${DateTime.now().microsecondsSinceEpoch}',
+              name: name,
+              members: _members,
+              createdAt: DateTime.now(),
+            );
+
+            context.read<SplitProvider>().addTrip(trip);
+            Navigator.pop(context);
+          },
+          child: const Text('Create'),
+        ),
+      ],
+    );
   }
 }

@@ -189,9 +189,21 @@ class SettlementScreen extends StatelessWidget {
                     statusColor = colorScheme.error;
                     statusIcon = Icons.arrow_upward;
                   } else {
-                    status = 'Settled';
-                    statusColor = colorScheme.onSurface.withOpacity(0.4);
-                    statusIcon = Icons.check;
+                    // Zero balance — either truly settled OR never included
+                    // Check if this member appears in ANY expense's splitAmong
+                    final expenses = provider.getExpensesForTrip(tripId);
+                    final isInAnyExpense = expenses.any(
+                      (e) => e.splitAmong.contains(member) || e.paidBy == member,
+                    );
+                    if (isInAnyExpense) {
+                      status = 'Settled';
+                      statusColor = Colors.green;
+                      statusIcon = Icons.check_circle;
+                    } else {
+                      status = 'Not in any splits';
+                      statusColor = Colors.orange;
+                      statusIcon = Icons.warning_amber_rounded;
+                    }
                   }
 
                   return ListTile(

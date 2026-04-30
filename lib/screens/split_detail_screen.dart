@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/split_provider.dart';
@@ -24,24 +25,29 @@ class SplitDetailScreen extends StatelessWidget {
         title: Text(trip.name),
         centerTitle: true,
         actions: [
-          TextButton.icon(
-            onPressed: expenses.isEmpty
-                ? null
-                : () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => SettlementScreen(tripId: tripId),
-                      ),
-                    );
-                  },
-            icon: const Icon(Icons.handshake_outlined, size: 18),
-            label: const Text('Settle'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: FilledButton.tonalIcon(
+              onPressed: expenses.isEmpty
+                  ? null
+                  : () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SettlementScreen(tripId: tripId),
+                        ),
+                      );
+                    },
+              icon: const Icon(Icons.handshake_outlined, size: 16),
+              label: const Text('Settle'),
+            ),
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
               if (value == 'add_member') {
                 _showAddMemberDialog(context, trip);
+              } else if (value == 'remove_member') {
+                _showRemoveMemberDialog(context, trip);
               }
             },
             itemBuilder: (ctx) => [
@@ -50,6 +56,15 @@ class SplitDetailScreen extends StatelessWidget {
                 child: ListTile(
                   leading: Icon(Icons.person_add),
                   title: Text('Add Member'),
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'remove_member',
+                child: ListTile(
+                  leading: Icon(Icons.person_remove, color: Colors.red),
+                  title: Text('Remove Member', style: TextStyle(color: Colors.red)),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
@@ -67,7 +82,10 @@ class SplitDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [colorScheme.primaryContainer, colorScheme.tertiaryContainer],
+                colors: [
+                  colorScheme.primaryContainer,
+                  colorScheme.tertiaryContainer
+                ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -122,7 +140,8 @@ class SplitDetailScreen extends StatelessWidget {
                     final maxBalance = balances.values
                         .map((v) => v.abs())
                         .fold(0.0, (a, b) => a > b ? a : b);
-                    final ratio = maxBalance > 0 ? (balance.abs() / maxBalance) : 0.0;
+                    final ratio =
+                        maxBalance > 0 ? (balance.abs() / maxBalance) : 0.0;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
@@ -130,10 +149,14 @@ class SplitDetailScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: 14,
-                            backgroundColor: _getAvatarColor(member, colorScheme),
+                            backgroundColor:
+                                _getAvatarColor(member, colorScheme),
                             child: Text(
                               member[0].toUpperCase(),
-                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -152,9 +175,12 @@ class SplitDetailScreen extends StatelessWidget {
                               child: LinearProgressIndicator(
                                 value: ratio.clamp(0.0, 1.0),
                                 minHeight: 8,
-                                backgroundColor: colorScheme.surfaceContainerHighest,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
                                 valueColor: AlwaysStoppedAnimation(
-                                  balance >= 0 ? Colors.green : colorScheme.error,
+                                  balance >= 0
+                                      ? Colors.green
+                                      : colorScheme.error,
                                 ),
                               ),
                             ),
@@ -168,7 +194,9 @@ class SplitDetailScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 13,
-                                color: balance >= 0 ? Colors.green : colorScheme.error,
+                                color: balance >= 0
+                                    ? Colors.green
+                                    : colorScheme.error,
                               ),
                             ),
                           ),
@@ -203,7 +231,8 @@ class SplitDetailScreen extends StatelessWidget {
                     child: Text(
                       'No expenses yet.\nTap + to add the first one!',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
+                      style: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.4)),
                     ),
                   )
                 : ListView.builder(
@@ -222,7 +251,8 @@ class SplitDetailScreen extends StatelessWidget {
                             color: colorScheme.error,
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(Icons.delete_outline, color: colorScheme.onError),
+                          child: Icon(Icons.delete_outline,
+                              color: colorScheme.onError),
                         ),
                         onDismissed: (_) => provider.deleteExpense(expense.id),
                         child: Card(
@@ -232,39 +262,54 @@ class SplitDetailScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12),
                             side: BorderSide(color: colorScheme.outlineVariant),
                           ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: _getAvatarColor(expense.paidBy, colorScheme),
-                              child: Text(
-                                expense.paidBy[0].toUpperCase(),
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => _showAddExpenseDialog(context, trip,
+                                existingExpense: expense),
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: _getAvatarColor(
+                                    expense.paidBy, colorScheme),
+                                child: Text(
+                                  expense.paidBy[0].toUpperCase(),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white),
+                                ),
                               ),
-                            ),
-                            title: Text(
-                              expense.description,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              'Paid by ${expense.paidBy} · Split ${expense.splitAmong.length}',
-                              style: TextStyle(fontSize: 12, color: colorScheme.onSurface.withOpacity(0.5)),
-                            ),
-                            trailing: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '₹${expense.amount.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.primary,
-                                    fontSize: 16,
+                              title: Text(
+                                expense.description,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Text(
+                                'Paid by ${expense.paidBy} · Split ${expense.splitAmong.length}',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color:
+                                        colorScheme.onSurface.withOpacity(0.5)),
+                              ),
+                              trailing: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '₹${expense.amount.toStringAsFixed(0)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.primary,
+                                      fontSize: 16,
+                                    ),
                                   ),
-                                ),
-                                Text(
-                                  DateFormat('MMM dd').format(expense.date),
-                                  style: TextStyle(fontSize: 11, color: colorScheme.onSurface.withOpacity(0.4)),
-                                ),
-                              ],
+                                  Text(
+                                    DateFormat('MMM dd').format(expense.date),
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: colorScheme.onSurface
+                                            .withOpacity(0.4)),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
@@ -281,11 +326,16 @@ class SplitDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showAddExpenseDialog(BuildContext context, SplitTripModel trip) {
-    final amountController = TextEditingController();
-    final descController = TextEditingController();
-    String paidBy = trip.members.first;
-    List<String> splitAmong = List.from(trip.members);
+  void _showAddExpenseDialog(BuildContext context, SplitTripModel trip,
+      {SplitExpenseModel? existingExpense}) {
+    final amountController =
+        TextEditingController(text: existingExpense?.amount.toString() ?? '');
+    final descController =
+        TextEditingController(text: existingExpense?.description ?? '');
+    String paidBy = existingExpense?.paidBy ?? trip.members.first;
+    List<String> splitAmong = existingExpense != null
+        ? List<String>.from(existingExpense.splitAmong)
+        : List<String>.from(trip.members);
 
     showDialog(
       context: context,
@@ -293,7 +343,8 @@ class SplitDetailScreen extends StatelessWidget {
         return StatefulBuilder(
           builder: (ctx, setDialogState) {
             return AlertDialog(
-              title: const Text('Add Expense'),
+              title: Text(
+                  existingExpense == null ? 'Add Expense' : 'Edit Expense'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -310,7 +361,8 @@ class SplitDetailScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     TextField(
                       controller: amountController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType:
+                          const TextInputType.numberWithOptions(decimal: true),
                       decoration: const InputDecoration(
                         labelText: 'Amount',
                         prefixText: '₹ ',
@@ -326,7 +378,8 @@ class SplitDetailScreen extends StatelessWidget {
                       ),
                       isExpanded: true,
                       items: trip.members
-                          .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+                          .map(
+                              (m) => DropdownMenuItem(value: m, child: Text(m)))
                           .toList(),
                       onChanged: (val) {
                         setDialogState(() => paidBy = val!);
@@ -340,7 +393,10 @@ class SplitDetailScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withOpacity(0.7),
                         ),
                       ),
                     ),
@@ -348,7 +404,8 @@ class SplitDetailScreen extends StatelessWidget {
                     ...trip.members.map((member) {
                       return CheckboxListTile(
                         value: splitAmong.contains(member),
-                        title: Text(member, style: const TextStyle(fontSize: 14)),
+                        title:
+                            Text(member, style: const TextStyle(fontSize: 14)),
                         dense: true,
                         contentPadding: EdgeInsets.zero,
                         controlAffinity: ListTileControlAffinity.leading,
@@ -373,36 +430,63 @@ class SplitDetailScreen extends StatelessWidget {
                 ),
                 FilledButton(
                   onPressed: () {
-                    final amount = double.tryParse(amountController.text.trim());
+                    final amount =
+                        double.tryParse(amountController.text.trim());
                     final desc = descController.text.trim();
 
                     if (amount == null || amount <= 0 || desc.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Fill in all fields properly!')),
+                        const SnackBar(
+                            content: Text('Fill in all fields properly!')),
                       );
                       return;
                     }
                     if (splitAmong.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Select at least 1 person to split with!')),
+                        const SnackBar(
+                            content: Text(
+                                'Select at least 1 person to split with!')),
                       );
                       return;
                     }
 
-                    final expense = SplitExpenseModel(
-                      id: 'se_${DateTime.now().microsecondsSinceEpoch}',
-                      tripId: tripId,
-                      amount: amount,
-                      description: desc,
-                      paidBy: paidBy,
-                      splitAmong: splitAmong,
-                      date: DateTime.now(),
-                    );
+                    if (existingExpense == null) {
+                      // New Expense
+                      final expense = SplitExpenseModel(
+                        id: 'se_${DateTime.now().microsecondsSinceEpoch}',
+                        tripId: tripId,
+                        amount: amount,
+                        description: desc,
+                        paidBy: paidBy,
+                        splitAmong: splitAmong,
+                        date: DateTime.now(),
+                      );
+                      context.read<SplitProvider>().addExpense(expense);
+                    } else {
+                      // Update Existing Expense
+                      final updatedExpense = SplitExpenseModel(
+                        id: existingExpense.id,
+                        tripId: existingExpense.tripId,
+                        amount: amount,
+                        description: desc,
+                        paidBy: paidBy,
+                        splitAmong: splitAmong,
+                        date: existingExpense.date,
+                      );
 
-                    context.read<SplitProvider>().addExpense(expense);
+                      // Using the hive_object save() is better, but since we recreate
+                      // the model instance to keep it clean, we'll swap it in the box.
+                      final box = Hive.box<SplitExpenseModel>(
+                          SplitProvider.expenseBoxName);
+                      final key = box.keys.firstWhere(
+                          (k) => box.get(k)?.id == existingExpense.id);
+                      box.put(key, updatedExpense);
+                      context.read<SplitProvider>().loadData();
+                    }
+
                     Navigator.pop(ctx);
                   },
-                  child: const Text('Add'),
+                  child: Text(existingExpense == null ? 'Add' : 'Update'),
                 ),
               ],
             );
@@ -427,7 +511,8 @@ class SplitDetailScreen extends StatelessWidget {
           textCapitalization: TextCapitalization.words,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               final name = controller.text.trim();
@@ -442,6 +527,147 @@ class SplitDetailScreen extends StatelessWidget {
               Navigator.pop(ctx);
             },
             child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRemoveMemberDialog(BuildContext context, SplitTripModel trip) {
+    if (trip.members.length <= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('A trip needs at least 2 members!')),
+      );
+      return;
+    }
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final provider = context.read<SplitProvider>();
+    final expenses = provider.getExpensesForTrip(trip.id);
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove Member'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Tap a member to remove them.',
+                style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
+              ),
+              const SizedBox(height: 12),
+              ...trip.members.map((member) {
+                // Count how many expenses involve this member
+                final involvedCount = expenses.where(
+                  (e) => e.paidBy == member || e.splitAmong.contains(member),
+                ).length;
+
+                return ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: _getAvatarColor(member, colorScheme),
+                    child: Text(
+                      member[0].toUpperCase(),
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                  title: Text(member),
+                  subtitle: involvedCount > 0
+                      ? Text(
+                          'In $involvedCount expense${involvedCount == 1 ? '' : 's'}',
+                          style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
+                        )
+                      : const Text('Not in any expenses', style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.close, color: Colors.red, size: 20),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    // Show confirmation with impact warning
+                    _confirmRemoveMember(context, trip, member, involvedCount);
+                  },
+                );
+              }),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+        ],
+      ),
+    );
+  }
+
+  void _confirmRemoveMember(
+    BuildContext context,
+    SplitTripModel trip,
+    String member,
+    int involvedCount,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Remove $member?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (involvedCount > 0) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'This will affect $involvedCount expense${involvedCount == 1 ? '' : 's'}.',
+                        style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
+            Text(
+              '• Expenses they paid for will be deleted\n'
+              '• They will be removed from all splits\n'
+              '• Remaining members\' shares will change',
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface.withOpacity(0.7),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final affected = await context.read<SplitProvider>().removeMemberFromTrip(trip.id, member);
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      '$member removed${affected > 0 ? ' · $affected expense${affected == 1 ? '' : 's'} updated' : ''}',
+                    ),
+                  ),
+                );
+              }
+            },
+            style: FilledButton.styleFrom(backgroundColor: colorScheme.error),
+            child: const Text('Remove'),
           ),
         ],
       ),
