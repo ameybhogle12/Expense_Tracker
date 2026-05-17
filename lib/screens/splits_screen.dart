@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/split_provider.dart';
 import '../models/split_trip_model.dart';
+import '../widgets/animations.dart';
 import 'split_detail_screen.dart';
 
 class SplitsScreen extends StatelessWidget {
@@ -91,8 +92,8 @@ class SplitsScreen extends StatelessWidget {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => SplitDetailScreen(tripId: trip.id),
+                          SmoothPageRoute(
+                            page: SplitDetailScreen(tripId: trip.id),
                           ),
                         );
                       },

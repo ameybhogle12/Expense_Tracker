@@ -21,13 +21,14 @@ class SplitTripModelAdapter extends TypeAdapter<SplitTripModel> {
       name: fields[1] as String,
       members: (fields[2] as List).cast<String>(),
       createdAt: fields[3] as DateTime,
+      settledPayments: (fields[4] as List?)?.cast<String>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, SplitTripModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class SplitTripModelAdapter extends TypeAdapter<SplitTripModel> {
       ..writeByte(2)
       ..write(obj.members)
       ..writeByte(3)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(4)
+      ..write(obj.settledPayments);
   }
 
   @override

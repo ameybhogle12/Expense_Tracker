@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../providers/split_provider.dart';
 import '../models/split_trip_model.dart';
 import '../models/split_expense_model.dart';
+import '../widgets/animations.dart';
 import 'settlement_screen.dart';
 
 class SplitDetailScreen extends StatelessWidget {
@@ -30,14 +31,7 @@ class SplitDetailScreen extends StatelessWidget {
             child: FilledButton.tonalIcon(
               onPressed: expenses.isEmpty
                   ? null
-                  : () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => SettlementScreen(tripId: tripId),
-                        ),
-                      );
-                    },
+                  : () => _showCalculatingAnimation(context, tripId),
               icon: const Icon(Icons.handshake_outlined, size: 16),
               label: const Text('Settle'),
             ),
@@ -170,19 +164,13 @@ class SplitDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: ratio.clamp(0.0, 1.0),
-                                minHeight: 8,
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                valueColor: AlwaysStoppedAnimation(
-                                  balance >= 0
-                                      ? Colors.green
-                                      : colorScheme.error,
-                                ),
-                              ),
+                            child: AnimatedBalanceBar(
+                              ratio: ratio,
+                              isPositive: balance >= 0,
+                              backgroundColor: colorScheme.surfaceContainerHighest,
+                              barColor: balance >= 0
+                                  ? Colors.green
+                                  : colorScheme.error,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -323,6 +311,37 @@ class SplitDetailScreen extends StatelessWidget {
         onPressed: () => _showAddExpenseDialog(context, trip),
         child: const Icon(Icons.add),
       ),
+    );
+  }
+
+  void _showCalculatingAnimation(BuildContext context, String tripId) {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      transitionDuration: const Duration(milliseconds: 400),
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(
+          opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.8, end: 1.0).animate(
+              CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+            ),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return _CalculatingOverlay(
+          onDone: () {
+            Navigator.pop(context); // close overlay
+            Navigator.push(
+              context,
+              SmoothPageRoute(page: SettlementScreen(tripId: tripId)),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -686,5 +705,135 @@ class SplitDetailScreen extends StatelessWidget {
       Colors.brown,
     ];
     return colors[name.hashCode.abs() % colors.length];
+  }
+}
+
+// ─── Calculating Animation Overlay ─────────────────────────────
+class _CalculatingOverlay extends StatefulWidget {
+  final VoidCallback onDone;
+  const _CalculatingOverlay({required this.onDone});
+
+  @override
+  State<_CalculatingOverlay> createState() => _CalculatingOverlayState();
+}
+
+class _CalculatingOverlayState extends State<_CalculatingOverlay>
+    with TickerProviderStateMixin {
+  late AnimationController _spinController;
+  late AnimationController _progressController;
+  int _stage = 0;
+
+  final _stages = [
+    {'icon': Icons.receipt_long, 'text': 'Analyzing expenses...'},
+    {'icon': Icons.calculate, 'text': 'Calculating balances...'},
+    {'icon': Icons.swap_horiz, 'text': 'Optimizing transfers...'},
+    {'icon': Icons.check_circle, 'text': 'Done!'},
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _spinController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+
+    _progressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3200),
+    )..forward();
+
+    _progressController.addListener(() {
+      final newStage = (_progressController.value * _stages.length)
+          .floor()
+          .clamp(0, _stages.length - 1);
+      if (newStage != _stage) {
+        setState(() => _stage = newStage);
+      }
+    });
+
+    _progressController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        Future.delayed(const Duration(milliseconds: 400), () {
+          if (mounted) widget.onDone();
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _spinController.dispose();
+    _progressController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Spinning icon
+            AnimatedBuilder(
+              animation: _spinController,
+              builder: (_, __) {
+                return Transform.rotate(
+                  angle: _spinController.value * 6.28 * (_stage < 3 ? 1 : 0),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: Icon(
+                      _stages[_stage]['icon'] as IconData,
+                      key: ValueKey(_stage),
+                      size: 64,
+                      color: _stage == 3 ? Colors.green.shade300 : colorScheme.primary,
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+            // Stage text
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Text(
+                _stages[_stage]['text'] as String,
+                key: ValueKey(_stage),
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+            // Progress bar
+            SizedBox(
+              width: 200,
+              child: AnimatedBuilder(
+                animation: _progressController,
+                builder: (_, __) {
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: _progressController.value,
+                      minHeight: 4,
+                      backgroundColor: Colors.white24,
+                      valueColor: AlwaysStoppedAnimation(
+                        _stage == 3 ? Colors.green : colorScheme.primary,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

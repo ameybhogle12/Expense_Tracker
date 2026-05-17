@@ -65,10 +65,57 @@ class SplitProvider extends ChangeNotifier {
       name: trip.name,
       members: updatedMembers,
       createdAt: trip.createdAt,
+      settledPayments: trip.settledPayments,
     );
     await trip.delete();
     await tripBox.add(updatedTrip);
     await loadData();
+  }
+
+  // ─── Settlement Payment Tracking ────────────────────────────
+
+  /// Marks a settlement (e.g. "Sneha->Amey") as paid.
+  Future<void> markSettlementPaid(String tripId, String from, String to) async {
+    final tripBox = Hive.box<SplitTripModel>(tripBoxName);
+    final trip = tripBox.values.firstWhere((t) => t.id == tripId);
+    final key = '$from->$to';
+    if (trip.settledPayments.contains(key)) return;
+
+    final updated = SplitTripModel(
+      id: trip.id,
+      name: trip.name,
+      members: trip.members,
+      createdAt: trip.createdAt,
+      settledPayments: [...trip.settledPayments, key],
+    );
+    final hiveKey = tripBox.keys.firstWhere((k) => tripBox.get(k)?.id == tripId);
+    await tripBox.put(hiveKey, updated);
+    await loadData();
+  }
+
+  /// Unmarks a settlement as paid (undo).
+  Future<void> unmarkSettlementPaid(String tripId, String from, String to) async {
+    final tripBox = Hive.box<SplitTripModel>(tripBoxName);
+    final trip = tripBox.values.firstWhere((t) => t.id == tripId);
+    final key = '$from->$to';
+
+    final updatedPayments = List<String>.from(trip.settledPayments)..remove(key);
+    final updated = SplitTripModel(
+      id: trip.id,
+      name: trip.name,
+      members: trip.members,
+      createdAt: trip.createdAt,
+      settledPayments: updatedPayments,
+    );
+    final hiveKey = tripBox.keys.firstWhere((k) => tripBox.get(k)?.id == tripId);
+    await tripBox.put(hiveKey, updated);
+    await loadData();
+  }
+
+  /// Check if a specific settlement is marked as paid.
+  bool isSettlementPaid(String tripId, String from, String to) {
+    final trip = _trips.firstWhere((t) => t.id == tripId);
+    return trip.settledPayments.contains('$from->$to');
   }
 
   /// Removes a member from a trip AND scrubs them from all expense splits.
@@ -81,11 +128,16 @@ class SplitProvider extends ChangeNotifier {
     // 1. Remove from trip members list
     final trip = tripBox.values.firstWhere((t) => t.id == tripId);
     final updatedMembers = List<String>.from(trip.members)..remove(memberName);
+    // Also clean out any settled payments involving this member
+    final cleanedPayments = trip.settledPayments
+        .where((p) => !p.contains(memberName))
+        .toList();
     final updatedTrip = SplitTripModel(
       id: trip.id,
       name: trip.name,
       members: updatedMembers,
       createdAt: trip.createdAt,
+      settledPayments: cleanedPayments,
     );
     await trip.delete();
     await tripBox.add(updatedTrip);

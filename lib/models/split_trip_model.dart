@@ -16,10 +16,16 @@ class SplitTripModel extends HiveObject {
   @HiveField(3)
   final DateTime createdAt;
 
+  /// Tracks which settlements have been marked as paid.
+  /// Stored as "from->to" strings e.g. ["Sneha->Amey", "Karan->Rahul"]
+  @HiveField(4)
+  final List<String> settledPayments;
+
   SplitTripModel({
     required this.id,
     required this.name,
     required this.members,
     required this.createdAt,
-  });
+    List<String>? settledPayments,
+  }) : settledPayments = settledPayments ?? [];
 }
