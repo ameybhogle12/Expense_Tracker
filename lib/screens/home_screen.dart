@@ -4,13 +4,36 @@ import 'package:provider/provider.dart';
 import 'package:csv/csv.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/expense_provider.dart';
+import '../providers/tour_provider.dart';
 import '../widgets/dashboard_header.dart';
 import '../widgets/budgets_overview.dart';
 import '../widgets/recent_transactions.dart';
 import 'settings_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final GlobalKey _walletsKey = GlobalKey();
+  final GlobalKey _budgetsKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        final tourProvider = context.read<TourProvider>();
+        tourProvider.registerKey('wallets', _walletsKey);
+        tourProvider.registerKey('budgets', _budgetsKey);
+      } catch (e) {
+        debugPrint("TourProvider not registered yet: $e");
+      }
+    });
+  }
 
   Future<void> _exportToCSV(BuildContext context) async {
     try {
@@ -32,7 +55,6 @@ class HomeScreen extends StatelessWidget {
         ]);
       }
 
-      // String csvData = const ListToCsvConverter().convert(rows);
       String csvData = ListToCsvConverter().convert(rows);
       
       Directory? dir = await getDownloadsDirectory();
@@ -44,13 +66,13 @@ class HomeScreen extends StatelessWidget {
       final file = File(path);
       await file.writeAsString(csvData);
 
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Success! Exported to: $path'), duration: const Duration(seconds: 4)),
         );
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Export failed: $e'), backgroundColor: Colors.red),
         );
@@ -62,7 +84,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expense Tracker', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Trip & Track', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: false,
         actions: [
           IconButton(
@@ -81,18 +103,18 @@ class HomeScreen extends StatelessWidget {
           )
         ],
       ),
-      body: const SafeArea(
+      body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              DashboardHeader(),
-              SizedBox(height: 24),
-              BudgetsOverview(),
-              SizedBox(height: 24),
-              RecentTransactions(),
-              SizedBox(height: 80), // Padding for bottom nav and FAB
+              DashboardHeader(key: _walletsKey),
+              const SizedBox(height: 24),
+              BudgetsOverview(key: _budgetsKey),
+              const SizedBox(height: 24),
+              const RecentTransactions(),
+              const SizedBox(height: 80), // Padding for bottom nav and FAB
             ],
           ),
         ),

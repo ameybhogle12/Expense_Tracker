@@ -2,12 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/split_provider.dart';
+import '../providers/tour_provider.dart';
 import '../models/split_trip_model.dart';
 import '../widgets/animations.dart';
 import 'split_detail_screen.dart';
 
-class SplitsScreen extends StatelessWidget {
+class SplitsScreen extends StatefulWidget {
   const SplitsScreen({super.key});
+
+  @override
+  State<SplitsScreen> createState() => _SplitsScreenState();
+}
+
+class _SplitsScreenState extends State<SplitsScreen> {
+  final GlobalKey _splitsFabKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        context.read<TourProvider>().registerKey('splits_fab', _splitsFabKey);
+      } catch (e) {
+        debugPrint("Error registering Splits FAB key: $e");
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -139,9 +159,9 @@ class SplitsScreen extends StatelessWidget {
                                     Text(
                                       '₹${total.toStringAsFixed(0)}',
                                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: colorScheme.primary,
-                                          ),
+                                              fontWeight: FontWeight.bold,
+                                              color: colorScheme.primary,
+                                            ),
                                     ),
                                     Text(
                                       '$expenseCount expense${expenseCount == 1 ? '' : 's'}',
@@ -196,6 +216,7 @@ class SplitsScreen extends StatelessWidget {
               },
             ),
       floatingActionButton: FloatingActionButton(
+        key: _splitsFabKey,
         onPressed: () => _showCreateTripDialog(context),
         child: const Icon(Icons.add),
       ),

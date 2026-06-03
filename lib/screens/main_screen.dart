@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'home_screen.dart';
 import 'charts_screen.dart';
 import 'subscriptions_screen.dart';
 import 'goals_screen.dart';
 import 'splits_screen.dart';
 import '../widgets/add_expense_form.dart';
+import '../widgets/spotlight_tour_overlay.dart';
+import '../providers/tour_provider.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -15,6 +18,8 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
+  final GlobalKey _navBarKey = GlobalKey();
+  final GlobalKey _addBtnKey = GlobalKey();
 
   List<Widget> get _screens => const [
     HomeScreen(),
@@ -23,6 +28,62 @@ class _MainScreenState extends State<MainScreen> {
     GoalsScreen(),
     SplitsScreen(),
   ];
+
+  TourProvider? _tourProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      try {
+        _tourProvider = context.read<TourProvider>();
+        _tourProvider?.registerKey('nav_bar', _navBarKey);
+        _tourProvider?.registerKey('add_btn', _addBtnKey);
+        _tourProvider?.addListener(_handleTourProgress);
+        
+        // Auto-trigger tour if it hasn't been completed yet
+        if (!_tourProvider!.isTourCompleted) {
+          Future.delayed(const Duration(milliseconds: 600), () {
+            if (mounted) {
+              _tourProvider?.startTour();
+            }
+          });
+        }
+      } catch (e) {
+        debugPrint("TourProvider not registered yet: $e");
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tourProvider?.removeListener(_handleTourProgress);
+    super.dispose();
+  }
+
+  void _handleTourProgress() {
+    if (!mounted || _tourProvider == null) return;
+    if (_tourProvider!.isTourActive) {
+      final currentStepIdx = _tourProvider!.currentStep;
+      final step = _tourProvider!.steps[currentStepIdx];
+      
+      // Auto-switch tabs based on the tour step
+      if (step.keyId == 'splits_fab') {
+        if (_currentIndex != 4) {
+          setState(() {
+            _currentIndex = 4;
+          });
+        }
+      } else if (step.keyId != 'nav_bar') {
+        // Switch back to Home (index 0) for home-specific steps
+        if (_currentIndex != 0) {
+          setState(() {
+            _currentIndex = 0;
+          });
+        }
+      }
+    }
+  }
 
   void _openAddExpenseOverlay() {
     showModalBottomSheet(
@@ -35,61 +96,86 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeOut,
-        switchOutCurve: Curves.easeIn,
-        transitionBuilder: (child, animation) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        child: KeyedSubtree(
-          key: ValueKey(_currentIndex),
-          child: _screens[_currentIndex],
-        ),
-      ),
-      floatingActionButton: _currentIndex >= 2
-          ? null
-          : FloatingActionButton(
-              onPressed: _openAddExpenseOverlay,
-              child: const Icon(Icons.add),
+    return Stack(
+      children: [
+        Scaffold(
+          body: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            transitionBuilder: (child, animation) {
+              final offsetAnimation = Tween<Offset>(
+                begin: const Offset(0.04, 0.0),
+                end: Offset.zero,
+              ).animate(animation);
+              final scaleAnimation = Tween<double>(
+                begin: 0.98,
+                end: 1.0,
+              ).animate(animation);
+
+              return FadeTransition(
+                opacity: animation,
+                child: ScaleTransition(
+                  scale: scaleAnimation,
+                  child: SlideTransition(
+                    position: offsetAnimation,
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey(_currentIndex),
+              child: _screens[_currentIndex],
             ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (int index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
-            label: 'Home',
           ),
-          NavigationDestination(
-            icon: Icon(Icons.pie_chart_outline),
-            selectedIcon: Icon(Icons.pie_chart),
-            label: 'Charts',
+          floatingActionButton: _currentIndex >= 2
+              ? null
+              : FloatingActionButton(
+                  key: _addBtnKey,
+                  onPressed: _openAddExpenseOverlay,
+                  child: const Icon(Icons.add),
+                ),
+          bottomNavigationBar: NavigationBar(
+            key: _navBarKey,
+            selectedIndex: _currentIndex,
+            onDestinationSelected: (int index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.home_outlined),
+                selectedIcon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.pie_chart_outline),
+                selectedIcon: Icon(Icons.pie_chart),
+                label: 'Charts',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.event_repeat_outlined),
+                selectedIcon: Icon(Icons.event_repeat),
+                label: 'Subs',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.flag_outlined),
+                selectedIcon: Icon(Icons.flag),
+                label: 'Goals',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.group_outlined),
+                selectedIcon: Icon(Icons.group),
+                label: 'Split',
+              ),
+            ],
           ),
-          NavigationDestination(
-            icon: Icon(Icons.event_repeat_outlined),
-            selectedIcon: Icon(Icons.event_repeat),
-            label: 'Subs',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag),
-            label: 'Goals',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.group_outlined),
-            selectedIcon: Icon(Icons.group),
-            label: 'Split',
-          ),
-        ],
-      ),
+        ),
+        // Spotlight onboarding tour overlay on top
+        const SpotlightTourOverlay(),
+      ],
     );
   }
 }
-

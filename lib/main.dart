@@ -1,12 +1,10 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
-import 'package:telephony/telephony.dart' hide NetworkType;
-
 import 'services/notification_service.dart';
 import 'services/log_processor.dart';
-import 'services/sms_processor.dart';
 
 import 'models/expense_model.dart';
 import 'models/budget_model.dart';
@@ -16,9 +14,11 @@ import 'models/goal_model.dart';
 import 'models/emi_model.dart';
 import 'models/split_trip_model.dart';
 import 'models/split_expense_model.dart';
+import 'models/wallet_model.dart';
 import 'providers/expense_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/split_provider.dart';
+import 'providers/tour_provider.dart';
 import 'screens/auth_wrapper.dart';
 
 @pragma('vm:entry-point') // Mandatory for Workmanager
@@ -38,6 +38,7 @@ void callbackDispatcher() {
       if (!Hive.isAdapterRegistered(4))
         Hive.registerAdapter(GoalModelAdapter());
       if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(EmiModelAdapter());
+      if (!Hive.isAdapterRegistered(8)) Hive.registerAdapter(WalletModelAdapter());
 
       await NotificationService().init();
       await LogProcessor.processAll(isBackground: true);
@@ -49,35 +50,28 @@ void callbackDispatcher() {
   });
 }
 
-// Telephony Background Handler
-@pragma('vm:entry-point')
-backgroundMessageHandler(SmsMessage message) async {
-  await NotificationService().init();
-  await SmsProcessor.processSms(message);
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
 
-  await NotificationService().init();
+  if (!kIsWeb) {
+    await NotificationService().init();
 
-  await Workmanager().initialize(
-    callbackDispatcher,
-    isInDebugMode: true,
-  );
+    await Workmanager().initialize(
+      callbackDispatcher,
+      isInDebugMode: true,
+    );
 
-  // Register the periodic task for closed-app logging
-  await Workmanager().registerPeriodicTask(
-    "1",
-    "background_log_check",
-    frequency: const Duration(minutes: 15),
-    constraints: Constraints(
-      networkType: NetworkType.notRequired,
-    ),
-  );
-
-  // SMS listening is initialized in AuthWrapper after UI loads
+    // Register the periodic task for closed-app logging
+    await Workmanager().registerPeriodicTask(
+      "1",
+      "background_log_check",
+      frequency: const Duration(minutes: 15),
+      constraints: Constraints(
+        networkType: NetworkType.notRequired,
+      ),
+    );
+  }
 
   // Register Adapters
   Hive.registerAdapter(ExpenseModelAdapter());
@@ -88,6 +82,7 @@ void main() async {
   Hive.registerAdapter(EmiModelAdapter());
   Hive.registerAdapter(SplitTripModelAdapter());
   Hive.registerAdapter(SplitExpenseModelAdapter());
+  Hive.registerAdapter(WalletModelAdapter());
 
   // Open Boxes
   await Hive.openBox<ExpenseModel>(ExpenseProvider.expenseBoxName);
@@ -98,7 +93,9 @@ void main() async {
   await Hive.openBox<EmiModel>(ExpenseProvider.emiBoxName);
   await Hive.openBox<SplitTripModel>(SplitProvider.tripBoxName);
   await Hive.openBox<SplitExpenseModel>(SplitProvider.expenseBoxName);
+  await Hive.openBox<WalletModel>(ExpenseProvider.walletBoxName);
   await Hive.openBox('settings_v1');
+  await Hive.openBox('feedback_v1');
 
   runApp(
     MultiProvider(
@@ -106,6 +103,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ExpenseProvider()..loadData()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()..loadTheme()),
         ChangeNotifierProvider(create: (_) => SplitProvider()..loadData()),
+        ChangeNotifierProvider(create: (_) => TourProvider()),
       ],
       child: const MyApp(),
     ),

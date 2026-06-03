@@ -20,7 +20,7 @@ class ExpenseModel extends HiveObject {
   final String note;
 
   @HiveField(5)
-  final String paymentMethod; 
+  String paymentMethod; 
 
   @HiveField(6)
   final bool isIncome;

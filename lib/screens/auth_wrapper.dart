@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -24,6 +25,15 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
   }
 
   Future<void> _loadSettings() async {
+    // Skip biometrics entirely on web
+    if (kIsWeb) {
+      setState(() {
+        _isSettingsLoaded = true;
+        _isAuthenticated = true;
+      });
+      return;
+    }
+
     final box = Hive.box('settings_v1');
     _useBiometrics = box.get('useBiometrics', defaultValue: false);
     setState(() {

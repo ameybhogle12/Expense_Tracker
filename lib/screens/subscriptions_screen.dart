@@ -86,11 +86,16 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   String? _selectedCategory;
-  String _paymentMethod = 'Main Bank'; 
+  late String _paymentMethod; 
   int _paymentDay = DateTime.now().day; 
   TimeOfDay _paymentTime = const TimeOfDay(hour: 9, minute: 0); 
 
-  final List<String> _wallets = ['Main Bank', 'UPI Lite', 'Cash'];
+  @override
+  void initState() {
+    super.initState();
+    final wallets = context.read<ExpenseProvider>().wallets.map((w) => w.name).toList();
+    _paymentMethod = wallets.isNotEmpty ? wallets.first : 'Main Bank';
+  }
 
   void _presentTimePicker() async {
     final pickedTime = await showTimePicker(
@@ -159,7 +164,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
             DropdownButtonFormField<String>(
               value: _paymentMethod,
               decoration: const InputDecoration(labelText: 'Pay From', border: OutlineInputBorder()),
-              items: _wallets.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+              items: context.watch<ExpenseProvider>().wallets.map((w) => DropdownMenuItem(value: w.name, child: Text(w.name))).toList(),
               onChanged: (val) => setState(() => _paymentMethod = val!),
             ),
             const SizedBox(height: 16),

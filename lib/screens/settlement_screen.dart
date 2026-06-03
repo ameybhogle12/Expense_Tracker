@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/split_provider.dart';
@@ -13,6 +14,17 @@ class SettlementScreen extends StatefulWidget {
 class _SettlementScreenState extends State<SettlementScreen>
     with TickerProviderStateMixin {
   late AnimationController _staggerController;
+  bool _isCalculating = true;
+  int _calcStep = 0;
+  Timer? _calcTimer;
+
+  final List<String> _calcSteps = [
+    'Analyzing trip expenses...',
+    'Simplifying group debt matrix...',
+    'Balancing ledger balances...',
+    'Generating optimal transfers...',
+    'Finalizing settlement room...',
+  ];
 
   @override
   void initState() {
@@ -20,17 +32,105 @@ class _SettlementScreenState extends State<SettlementScreen>
     _staggerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
-    )..forward();
+    );
+    
+    // Cycle through loader steps for 3.5 seconds before revealing results
+    _calcTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_calcStep < _calcSteps.length - 1) {
+            _calcStep++;
+          } else {
+            timer.cancel();
+            _isCalculating = false;
+            _staggerController.forward();
+          }
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
+    _calcTimer?.cancel();
     _staggerController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isCalculating) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Calculating Splits...'),
+          centerTitle: true,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                height: 120,
+                width: 120,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.0, end: 1.0),
+                      duration: const Duration(seconds: 3),
+                      builder: (context, value, child) {
+                        return CircularProgressIndicator(
+                          value: value,
+                          strokeWidth: 8,
+                          color: Theme.of(context).colorScheme.primary,
+                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        );
+                      },
+                    ),
+                    Icon(
+                      Icons.calculate_outlined,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 40),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                transitionBuilder: (child, animation) => FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.2),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                ),
+                child: Text(
+                  _calcSteps[_calcStep],
+                  key: ValueKey(_calcStep),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Running debt optimization algorithm',
+                style: TextStyle(
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5),
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final provider = context.watch<SplitProvider>();
     final trip = provider.trips.firstWhere((t) => t.id == widget.tripId);
     final settlements = provider.getSettlements(widget.tripId);

@@ -14,6 +14,46 @@ class LogProcessor {
     final subscriptionBox = await Hive.openBox<SubscriptionModel>(ExpenseProvider.subscriptionBoxName);
     final emiBox = await Hive.openBox<EmiModel>(ExpenseProvider.emiBoxName);
 
+    // Daily Spend Reminder check
+    try {
+      final settingsBox = await Hive.openBox('settings_v1');
+      final todayStr = "${now.year}-${now.month}-${now.day}";
+      final lastReminderDate = settingsBox.get('lastReminderSentDate');
+      
+      if (lastReminderDate != todayStr) {
+        bool hasRecentTransaction = false;
+        final oneDayAgo = now.subtract(const Duration(hours: 24));
+        
+        for (var expense in expenseBox.values) {
+          if (expense.date.isAfter(oneDayAgo)) {
+            hasRecentTransaction = true;
+            break;
+          }
+        }
+        
+        if (!hasRecentTransaction) {
+          final funnyReminders = [
+            "🧪 Test Subject Alert! Your friend needs your feedback. Did you log any expenses or test the Split Settlement room today? 😉",
+            "👀 Psst... your wallets are feeling lonely! Did you forget to record your snack spending today?",
+            "💸 Did you spend 0 rupees today, or are you just hiding your transactions from me? Tap to log them!",
+            "🕵️‍♂️ Friend Check: Your split-expense friends are waiting for splits! Tap to record split expenses and test!",
+          ];
+          
+          final index = now.minute % funnyReminders.length;
+          final reminderBody = funnyReminders[index];
+          
+          await NotificationService().showNotification(
+            title: '💸 Forgot to record money?',
+            body: reminderBody,
+          );
+          
+          await settingsBox.put('lastReminderSentDate', todayStr);
+        }
+      }
+    } catch (e) {
+      // Don't interrupt background processing if reminder fails
+    }
+
     // Process Subscriptions
     for (var sub in subscriptionBox.values) {
       if (now.day >= sub.paymentDay) {

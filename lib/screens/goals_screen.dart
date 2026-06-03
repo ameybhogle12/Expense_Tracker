@@ -338,8 +338,14 @@ class _AddEmiFormState extends State<_AddEmiForm> {
   final _amountController = TextEditingController();
   final _monthsController = TextEditingController();
   int _paymentDay = DateTime.now().day;
-  String _paymentMethod = 'Main Bank';
-  final List<String> _wallets = ['Main Bank', 'UPI Lite', 'Cash'];
+  late String _paymentMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    final wallets = context.read<ExpenseProvider>().wallets.map((w) => w.name).toList();
+    _paymentMethod = wallets.isNotEmpty ? wallets.first : 'Main Bank';
+  }
 
   void _submit() {
     final amount = double.tryParse(_amountController.text.trim());
@@ -390,7 +396,7 @@ class _AddEmiFormState extends State<_AddEmiForm> {
           DropdownButtonFormField<String>(
             value: _paymentMethod,
             decoration: const InputDecoration(labelText: 'Pay From Wallet', border: OutlineInputBorder()),
-            items: _wallets.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+            items: context.watch<ExpenseProvider>().wallets.map((w) => DropdownMenuItem(value: w.name, child: Text(w.name))).toList(),
             onChanged: (val) => setState(() => _paymentMethod = val!),
           ),
           const SizedBox(height: 16),
@@ -410,8 +416,14 @@ class _AddFundsToGoalDialog extends StatefulWidget {
 
 class _AddFundsToGoalDialogState extends State<_AddFundsToGoalDialog> {
   final _amountController = TextEditingController();
-  String _paymentMethod = 'Main Bank';
-  final List<String> _wallets = ['Main Bank', 'UPI Lite', 'Cash'];
+  late String _paymentMethod;
+
+  @override
+  void initState() {
+    super.initState();
+    final wallets = context.read<ExpenseProvider>().wallets.map((w) => w.name).toList();
+    _paymentMethod = wallets.isNotEmpty ? wallets.first : 'Main Bank';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -425,7 +437,7 @@ class _AddFundsToGoalDialogState extends State<_AddFundsToGoalDialog> {
           DropdownButtonFormField<String>(
             value: _paymentMethod,
             decoration: const InputDecoration(labelText: 'Withdraw From (Wallet)', border: OutlineInputBorder()),
-            items: _wallets.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+            items: context.watch<ExpenseProvider>().wallets.map((w) => DropdownMenuItem(value: w.name, child: Text(w.name))).toList(),
             onChanged: (val) => setState(() => _paymentMethod = val!),
           ),
         ],

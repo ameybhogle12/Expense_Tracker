@@ -20,9 +20,26 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   String? _selectedCategory;
   TransactionType _transactionType = TransactionType.expense;
   
-  String _paymentMethod = 'UPI Lite'; 
-  String _transferToWallet = 'Cash'; 
-  final List<String> _wallets = ['Main Bank', 'UPI Lite', 'Cash'];
+  late String _paymentMethod; 
+  late String _transferToWallet; 
+
+  @override
+  void initState() {
+    super.initState();
+    final provider = context.read<ExpenseProvider>();
+    final wallets = provider.wallets.map((w) => w.name).toList();
+    if (wallets.isNotEmpty) {
+      _paymentMethod = wallets.first;
+      if (wallets.length > 1) {
+        _transferToWallet = wallets[1];
+      } else {
+        _transferToWallet = wallets.first;
+      }
+    } else {
+      _paymentMethod = 'Main Bank';
+      _transferToWallet = 'Cash';
+    }
+  }
 
   void _presentDatePicker() async {
     final now = DateTime.now();
@@ -120,6 +137,17 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   @override
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+    final wallets = context.watch<ExpenseProvider>().wallets.map((w) => w.name).toList();
+
+    // Resilient fallback logic
+    if (wallets.isNotEmpty) {
+      if (!wallets.contains(_paymentMethod)) {
+        _paymentMethod = wallets.first;
+      }
+      if (!wallets.contains(_transferToWallet)) {
+        _transferToWallet = wallets.length > 1 ? wallets[1] : wallets.first;
+      }
+    }
 
     return SingleChildScrollView(
       child: Padding(
@@ -166,7 +194,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                     child: DropdownButtonFormField<String>(
                       value: _paymentMethod,
                       decoration: const InputDecoration(labelText: 'From', border: OutlineInputBorder()),
-                      items: _wallets.map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 14)))).toList(),
+                      items: wallets.map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 14)))).toList(),
                       onChanged: (val) => setState(() => _paymentMethod = val!),
                     ),
                   ),
@@ -178,7 +206,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                     child: DropdownButtonFormField<String>(
                       value: _transferToWallet,
                       decoration: const InputDecoration(labelText: 'To', border: OutlineInputBorder()),
-                      items: _wallets.map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 14)))).toList(),
+                      items: wallets.map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 14)))).toList(),
                       onChanged: (val) => setState(() => _transferToWallet = val!),
                     ),
                   ),
@@ -191,7 +219,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                   labelText: 'Wallet / Payment Method',
                   border: OutlineInputBorder(),
                 ),
-                items: _wallets.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+                items: wallets.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
                 onChanged: (val) => setState(() => _paymentMethod = val!),
               ),
             ],
