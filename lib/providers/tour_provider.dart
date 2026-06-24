@@ -40,12 +40,6 @@ class TourProvider with ChangeNotifier {
       spotlightLabel: 'Quick Add',
     ),
     TourStep(
-      keyId: 'splits_fab',
-      title: 'Split Settlements',
-      description: 'Planning a group trip? Create a split room to add shared bills, optimize who owes whom, and settle debts instantly with dynamic mathematical loaders!',
-      spotlightLabel: 'Create Group Trip',
-    ),
-    TourStep(
       keyId: 'nav_bar',
       title: 'Main Navigation',
       description: 'Switch instantly between Home, Charts, Subscriptions, EMIs/Goals, and Split settlement rooms.',

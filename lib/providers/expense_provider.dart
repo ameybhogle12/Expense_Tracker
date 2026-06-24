@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import '../services/notification_service.dart';
 import '../services/log_processor.dart';
 import '../models/expense_model.dart';
 import '../models/budget_model.dart';
@@ -458,6 +457,16 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   Future<void> deleteWallet(WalletModel wallet) async {
+    // Remove all transactions tied to this wallet
+    final expenseBox = Hive.box<ExpenseModel>(expenseBoxName);
+    final toDelete = expenseBox.values
+        .where((tx) => tx.paymentMethod == wallet.name)
+        .toList();
+    for (var tx in toDelete) {
+      await tx.delete();
+    }
+    _transactions.removeWhere((tx) => tx.paymentMethod == wallet.name);
+
     await wallet.delete();
     _wallets.remove(wallet);
     notifyListeners();
@@ -481,6 +490,30 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     _transactions = expenseBox.values.toList();
     _transactions.sort((a, b) => b.date.compareTo(a.date));
     notifyListeners();
+  }
+
+  /// Returns the number of transactions linked to a wallet.
+  int getWalletTransactionCount(String walletName) {
+    return _transactions.where((tx) => tx.paymentMethod == walletName).length;
+  }
+
+  /// Adjusts a wallet's balance to match a desired [newBalance] by inserting
+  /// a correction income or expense transaction.
+  Future<void> adjustWalletBalance(String walletName, double newBalance) async {
+    final currentBalance = getWalletBalance(walletName);
+    final diff = newBalance - currentBalance;
+    if (diff == 0) return;
+
+    final adjustment = ExpenseModel(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      amount: diff.abs(),
+      category: 'Other',
+      date: DateTime.now(),
+      note: 'Balance Adjustment',
+      paymentMethod: walletName,
+      isIncome: diff > 0, // positive diff → income, negative → expense
+    );
+    await addExpense(adjustment);
   }
 
   // ─── Dashboard Analytics Helpers ─────────────────────────────

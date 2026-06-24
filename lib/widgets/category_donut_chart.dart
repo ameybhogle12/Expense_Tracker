@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class CategoryDonutChart extends StatefulWidget {
   final int year;
@@ -27,6 +27,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
     final provider = context.watch<ExpenseProvider>();
     final theme = Theme.of(context);
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     // Build category spending data for the selected month
     final categoryData = <_CategorySpend>[];
@@ -51,12 +52,12 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Spending by Category',
+            l10n.spendingByCategory,
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 40),
-          const Center(child: Text('No spending data for this month.')),
+          Center(child: Text(l10n.noSpendingData)),
           const SizedBox(height: 40),
         ],
       );
@@ -88,7 +89,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Spending by Category',
+          l10n.spendingByCategory,
           style:
               theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
@@ -124,7 +125,7 @@ class _CategoryDonutChartState extends State<CategoryDonutChart> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Total',
+                    l10n.total,
                     style: theme.textTheme.labelSmall?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.5),
                     ),

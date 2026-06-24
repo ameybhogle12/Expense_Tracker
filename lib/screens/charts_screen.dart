@@ -8,6 +8,7 @@ import '../widgets/category_donut_chart.dart';
 import '../widgets/budgets_overview.dart';
 import '../widgets/goals_progress_section.dart';
 import '../widgets/upcoming_bills_section.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 enum _FilterPreset { thisMonth, lastMonth, last3Months, ytd }
 
@@ -111,11 +112,13 @@ class _ChartsScreenState extends State<ChartsScreen> {
 
     final monthLabel = DateFormat.yMMMM()
         .format(DateTime(_selectedYear, _selectedMonth));
+        
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Analytics',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.analytics,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
@@ -127,7 +130,7 @@ class _ChartsScreenState extends State<ChartsScreen> {
             const SizedBox(height: 12),
 
             // ── Filter Preset Chips ─────────────────────────────
-            _buildFilterChips(theme),
+            _buildFilterChips(theme, l10n),
             const SizedBox(height: 20),
 
             // ── Section 1: KPI Cards ────────────────────────────
@@ -213,31 +216,31 @@ class _ChartsScreenState extends State<ChartsScreen> {
     );
   }
 
-  Widget _buildFilterChips(ThemeData theme) {
+  Widget _buildFilterChips(ThemeData theme, AppLocalizations l10n) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
         children: [
           _FilterChip(
-            label: 'This Month',
+            label: l10n.thisMonth,
             isActive: _activePreset == _FilterPreset.thisMonth,
             onTap: () => _applyPreset(_FilterPreset.thisMonth),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Last Month',
+            label: l10n.lastMonth,
             isActive: _activePreset == _FilterPreset.lastMonth,
             onTap: () => _applyPreset(_FilterPreset.lastMonth),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Last 3 Months',
+            label: l10n.last3Months,
             isActive: _activePreset == _FilterPreset.last3Months,
             onTap: () => _applyPreset(_FilterPreset.last3Months),
           ),
           const SizedBox(width: 8),
           _FilterChip(
-            label: 'Year to Date',
+            label: l10n.yearToDate,
             isActive: _activePreset == _FilterPreset.ytd,
             onTap: () => _applyPreset(_FilterPreset.ytd),
           ),

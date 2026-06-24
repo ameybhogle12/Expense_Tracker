@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/split_provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class SettlementScreen extends StatefulWidget {
   final String tripId;
@@ -19,13 +20,7 @@ class _SettlementScreenState extends State<SettlementScreen>
   int _calcStep = 0;
   Timer? _calcTimer;
 
-  final List<String> _calcSteps = [
-    'Analyzing trip expenses...',
-    'Simplifying group debt matrix...',
-    'Balancing ledger balances...',
-    'Generating optimal transfers...',
-    'Finalizing settlement room...',
-  ];
+  late List<String> _calcSteps;
 
   @override
   void initState() {
@@ -36,6 +31,14 @@ class _SettlementScreenState extends State<SettlementScreen>
     );
 
     final provider = context.read<SplitProvider>();
+    final l10n = AppLocalizations.of(context)!;
+    _calcSteps = [
+      l10n.analyzingExpenses,
+      l10n.runningDebtOptimization,
+      l10n.calculatingBalances,
+      l10n.optimizingTransfers,
+      l10n.done,
+    ];
 
     // Settlement results are computed instantly; the loader is purely a
     // first-impression flourish. Only play it the first time a trip's
@@ -74,10 +77,11 @@ class _SettlementScreenState extends State<SettlementScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (_isCalculating) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Calculating Splits...'),
+          title: Text(l10n.calculatingSplits),
           centerTitle: true,
         ),
         body: Center(
@@ -134,7 +138,7 @@ class _SettlementScreenState extends State<SettlementScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                'Running debt optimization algorithm',
+                l10n.runningDebtOptimization,
                 style: TextStyle(
                   color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.5),
                   fontSize: 12,
@@ -161,7 +165,7 @@ class _SettlementScreenState extends State<SettlementScreen>
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settle Up'),
+        title: Text(l10n.settleUp),
         centerTitle: true,
       ),
       body: settlements.isEmpty
@@ -173,14 +177,14 @@ class _SettlementScreenState extends State<SettlementScreen>
                       size: 80, color: Colors.green.withOpacity(0.4)),
                   const SizedBox(height: 16),
                   Text(
-                    'All settled!',
+                    l10n.allSettled,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: colorScheme.onSurface.withOpacity(0.6),
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'No one owes anyone anything.',
+                    l10n.noOneOwesAnything,
                     style: TextStyle(
                         color: colorScheme.onSurface.withOpacity(0.4)),
                   ),
@@ -222,8 +226,8 @@ class _SettlementScreenState extends State<SettlementScreen>
                         const SizedBox(height: 8),
                         Text(
                           allPaid
-                              ? '🎉 All payments done!'
-                              : '$paidCount of ${settlements.length} paid',
+                              ? l10n.allPaymentsDone
+                              : l10n.paidOfTotal(paidCount, settlements.length),
                           style:
                               Theme.of(context).textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.bold,
@@ -235,8 +239,8 @@ class _SettlementScreenState extends State<SettlementScreen>
                         const SizedBox(height: 4),
                         Text(
                           allPaid
-                              ? 'Everyone is squared up!'
-                              : 'Optimized for minimum transfers',
+                              ? l10n.everyoneSquaredUp
+                              : l10n.optimizedForMinimumTransfers,
                           style: TextStyle(
                             color: allPaid
                                 ? Colors.white70
@@ -323,7 +327,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                                         ),
                                       ),
                                       Text(
-                                        'pays',
+                                        l10n.pays,
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: colorScheme.onSurface
@@ -391,7 +395,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                                         ),
                                       ),
                                       Text(
-                                        'receives',
+                                        l10n.receives,
                                         style: TextStyle(
                                           fontSize: 11,
                                           color: colorScheme.onSurface
@@ -434,9 +438,9 @@ class _SettlementScreenState extends State<SettlementScreen>
                                       },
                                       icon: const Icon(Icons.undo,
                                           size: 16, color: Colors.green),
-                                      label: const Text(
-                                        'Paid ✓  (tap to undo)',
-                                        style: TextStyle(
+                                      label: Text(
+                                        l10n.paidTapToUndo,
+                                        style: const TextStyle(
                                             color: Colors.green,
                                             fontSize: 13),
                                       ),
@@ -456,8 +460,8 @@ class _SettlementScreenState extends State<SettlementScreen>
                                       },
                                       icon: const Icon(Icons.check_circle,
                                           size: 16),
-                                      label: const Text('Mark as Paid',
-                                          style: TextStyle(fontSize: 13)),
+                                      label: Text(l10n.markAsPaid,
+                                          style: const TextStyle(fontSize: 13)),
                                       style: FilledButton.styleFrom(
                                         backgroundColor: colorScheme.primary,
                                         shape: RoundedRectangleBorder(
@@ -483,7 +487,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                   index: settlements.length + 1,
                   totalItems: settlements.length + 2,
                   child: Text(
-                    'Individual Breakdown',
+                    l10n.individualBreakdown,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface.withOpacity(0.7),
@@ -504,11 +508,11 @@ class _SettlementScreenState extends State<SettlementScreen>
                         memberSettlements.every((s) => provider.isSettlementPaid(widget.tripId, s.from, s.to));
                     
                     if (allMemberSettlementsPaid) {
-                      status = 'Paid ✓';
+                      status = l10n.paidCheck;
                       statusColor = Colors.green;
                       statusIcon = Icons.check_circle;
                     } else {
-                      status = 'Gets back ${currencyProvider.format(balance)}';
+                      status = l10n.getsBackAmount(currencyProvider.format(balance));
                       statusColor = Colors.green;
                       statusIcon = Icons.arrow_downward;
                     }
@@ -519,11 +523,11 @@ class _SettlementScreenState extends State<SettlementScreen>
                         memberSettlements.every((s) => provider.isSettlementPaid(widget.tripId, s.from, s.to));
                     
                     if (allMemberSettlementsPaid) {
-                      status = 'Paid ✓';
+                      status = l10n.paidCheck;
                       statusColor = Colors.green;
                       statusIcon = Icons.check_circle;
                     } else {
-                      status = 'Owes ${currencyProvider.format(balance.abs())}';
+                      status = l10n.owesAmount(currencyProvider.format(balance.abs()));
                       statusColor = colorScheme.error;
                       statusIcon = Icons.arrow_upward;
                     }
@@ -536,11 +540,11 @@ class _SettlementScreenState extends State<SettlementScreen>
                           e.paidBy == member,
                     );
                     if (isInAnyExpense) {
-                      status = 'Settled';
+                      status = l10n.settled;
                       statusColor = Colors.green;
                       statusIcon = Icons.check_circle;
                     } else {
-                      status = 'Not in any splits';
+                      status = l10n.notInAnySplits;
                       statusColor = Colors.orange;
                       statusIcon = Icons.warning_amber_rounded;
                     }
@@ -619,10 +623,12 @@ class _SettlementScreenState extends State<SettlementScreen>
     final colorScheme = Theme.of(context).colorScheme;
     final currencyProvider = context.read<CurrencyProvider>();
 
+    final l10n = AppLocalizations.of(context)!;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Payment'),
+        title: Text(l10n.confirmPayment),
         content: RichText(
           text: TextSpan(
             style: TextStyle(
@@ -632,25 +638,25 @@ class _SettlementScreenState extends State<SettlementScreen>
                 text: s.from,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              const TextSpan(text: ' has paid '),
+              TextSpan(text: l10n.hasPaidPart),
               TextSpan(
                 text: currencyProvider.format(s.amount),
                 style: TextStyle(
                     fontWeight: FontWeight.bold, color: colorScheme.primary),
               ),
-              const TextSpan(text: ' to '),
+              TextSpan(text: l10n.toPart),
               TextSpan(
                 text: s.to,
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              const TextSpan(text: '?'),
+              TextSpan(text: l10n.questionMarkPart),
             ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Not yet'),
+            child: Text(l10n.notYet),
           ),
           FilledButton.icon(
             onPressed: () {
@@ -658,7 +664,7 @@ class _SettlementScreenState extends State<SettlementScreen>
               provider.markSettlementPaid(widget.tripId, s.from, s.to);
             },
             icon: const Icon(Icons.check, size: 18),
-            label: const Text('Yes, Paid!'),
+            label: Text(l10n.yesPaid),
           ),
         ],
       ),

@@ -7,6 +7,7 @@ import '../providers/tour_provider.dart';
 import '../models/split_trip_model.dart';
 import '../widgets/animations.dart';
 import 'split_detail_screen.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class SplitsScreen extends StatefulWidget {
   const SplitsScreen({super.key});
@@ -36,10 +37,11 @@ class _SplitsScreenState extends State<SplitsScreen> {
     final trips = provider.trips;
     final colorScheme = Theme.of(context).colorScheme;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trip Splits'),
+        title: Text(l10n.tripSplits),
         centerTitle: true,
       ),
       body: trips.isEmpty
@@ -50,14 +52,14 @@ class _SplitsScreenState extends State<SplitsScreen> {
                   Icon(Icons.group_outlined, size: 80, color: colorScheme.primary.withOpacity(0.3)),
                   const SizedBox(height: 16),
                   Text(
-                    'No trips yet',
+                    l10n.noTripsYet,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: colorScheme.onSurface.withOpacity(0.5),
                         ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Tap + to create your first group trip!',
+                    l10n.tapToCreateTrip,
                     style: TextStyle(color: colorScheme.onSurface.withOpacity(0.4)),
                   ),
                 ],
@@ -88,14 +90,14 @@ class _SplitsScreenState extends State<SplitsScreen> {
                     return await showDialog<bool>(
                       context: context,
                       builder: (ctx) => AlertDialog(
-                        title: const Text('Delete Trip?'),
-                        content: Text('This will permanently delete "${trip.name}" and all its expenses.'),
+                        title: Text(l10n.deleteTrip),
+                        content: Text(l10n.confirmDeleteTripMsg(trip.name)),
                         actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+                          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
                           FilledButton(
                             onPressed: () => Navigator.pop(ctx, true),
                             style: FilledButton.styleFrom(backgroundColor: colorScheme.error),
-                            child: const Text('Delete'),
+                            child: Text(l10n.delete),
                           ),
                         ],
                       ),
@@ -166,7 +168,7 @@ class _SplitsScreenState extends State<SplitsScreen> {
                                             ),
                                     ),
                                     Text(
-                                      '$expenseCount expense${expenseCount == 1 ? '' : 's'}',
+                                      l10n.expenseCountString(expenseCount),
                                       style: TextStyle(
                                         color: colorScheme.onSurface.withOpacity(0.5),
                                         fontSize: 12,
@@ -274,8 +276,9 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
     final name = _memberController.text.trim();
     if (name.isEmpty) return;
     if (_members.contains(name)) {
+      final l10n = AppLocalizations.of(context)!;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$name is already added!')),
+        SnackBar(content: Text(l10n.memberAlreadyAdded(name))),
       );
       return;
     }
@@ -289,9 +292,10 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context)!;
 
     return AlertDialog(
-      title: const Text('New Trip'),
+      title: Text(l10n.newTrip),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -299,10 +303,10 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Trip Name',
-                hintText: 'e.g. Lonavala Day Trip',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.tripNameTitle,
+                hintText: l10n.tripNameHint,
+                border: const OutlineInputBorder(),
               ),
               textCapitalization: TextCapitalization.words,
             ),
@@ -315,8 +319,8 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
                     controller: _memberController,
                     focusNode: _memberFocus,
                     decoration: InputDecoration(
-                      labelText: 'Add Member',
-                      hintText: 'e.g. Rahul',
+                      labelText: l10n.addMember,
+                      hintText: l10n.memberHint,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: const Icon(Icons.person_add),
@@ -333,7 +337,7 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
             // ─── Member Chips ────────────────────────────────
             if (_members.isEmpty)
               Text(
-                'Type a name and press Enter to add',
+                l10n.typeNameToAdd,
                 style: TextStyle(
                   fontSize: 12,
                   color: colorScheme.onSurface.withOpacity(0.4),
@@ -364,7 +368,7 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '${_members.length} member${_members.length == 1 ? '' : 's'} added',
+                  l10n.membersAddedCount(_members.length),
                   style: TextStyle(
                     fontSize: 12,
                     color: colorScheme.primary,
@@ -378,20 +382,20 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         FilledButton(
           onPressed: () {
             final name = _nameController.text.trim();
             if (name.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Enter a trip name!')),
+                SnackBar(content: Text(l10n.enterTripName)),
               );
               return;
             }
             if (_members.length < 2) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Add at least 2 members!')),
+                SnackBar(content: Text(l10n.addAtLeastTwoMembers)),
               );
               return;
             }
@@ -406,7 +410,7 @@ class _CreateTripDialogState extends State<_CreateTripDialog> {
             context.read<SplitProvider>().addTrip(trip);
             Navigator.pop(context);
           },
-          child: const Text('Create'),
+          child: Text(l10n.create),
         ),
       ],
     );

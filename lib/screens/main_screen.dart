@@ -10,6 +10,7 @@ import '../widgets/add_expense_form.dart';
 import '../widgets/spotlight_tour_overlay.dart';
 import '../widgets/onboarding_balance_sheet.dart';
 import '../providers/tour_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -86,13 +87,7 @@ class _MainScreenState extends State<MainScreen> {
       final step = _tourProvider!.steps[currentStepIdx];
       
       // Auto-switch tabs based on the tour step
-      if (step.keyId == 'splits_fab') {
-        if (_currentIndex != 4) {
-          setState(() {
-            _currentIndex = 4;
-          });
-        }
-      } else if (step.keyId != 'nav_bar') {
+      if (step.keyId != 'nav_bar') {
         // Switch back to Home (index 0) for home-specific steps
         if (_currentIndex != 0) {
           setState(() {
@@ -162,31 +157,31 @@ class _MainScreenState extends State<MainScreen> {
                 _currentIndex = index;
               });
             },
-            destinations: const [
+            destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined),
-                selectedIcon: Icon(Icons.home),
-                label: 'Home',
+                icon: const Icon(Icons.home_outlined),
+                selectedIcon: const Icon(Icons.home),
+                label: AppLocalizations.of(context)!.navHome,
               ),
               NavigationDestination(
-                icon: Icon(Icons.pie_chart_outline),
-                selectedIcon: Icon(Icons.pie_chart),
-                label: 'Charts',
+                icon: const Icon(Icons.pie_chart_outline),
+                selectedIcon: const Icon(Icons.pie_chart),
+                label: AppLocalizations.of(context)!.navCharts,
               ),
               NavigationDestination(
-                icon: Icon(Icons.event_repeat_outlined),
-                selectedIcon: Icon(Icons.event_repeat),
-                label: 'Subs',
+                icon: const Icon(Icons.event_repeat_outlined),
+                selectedIcon: const Icon(Icons.event_repeat),
+                label: AppLocalizations.of(context)!.navSubs,
               ),
               NavigationDestination(
-                icon: Icon(Icons.flag_outlined),
-                selectedIcon: Icon(Icons.flag),
-                label: 'Goals',
+                icon: const Icon(Icons.flag_outlined),
+                selectedIcon: const Icon(Icons.flag),
+                label: AppLocalizations.of(context)!.navGoals,
               ),
               NavigationDestination(
-                icon: Icon(Icons.group_outlined),
-                selectedIcon: Icon(Icons.group),
-                label: 'Split',
+                icon: const Icon(Icons.group_outlined),
+                selectedIcon: const Icon(Icons.group),
+                label: AppLocalizations.of(context)!.navSplit,
               ),
             ],
           ),

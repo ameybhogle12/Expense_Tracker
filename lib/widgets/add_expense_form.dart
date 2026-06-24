@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../models/expense_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 enum TransactionType { expense, income, transfer }
 
@@ -40,6 +41,8 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       } else {
         _transferToWallet = wallets.first;
       }
+      _paymentMethod = wallets.first;
+      _transferToWallet = wallets.length > 1 ? wallets[1] : wallets.first;
     } else {
       _paymentMethod = 'Main Bank';
       _transferToWallet = 'Cash';
@@ -82,8 +85,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       final enteredAmount = double.tryParse(_amountController.text.trim().replaceAll(',', ''));
       if (enteredAmount == null || enteredAmount <= 0) {
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please enter a valid amount. (e.g. 2000)')),
+            SnackBar(content: Text(l10n.validAmountPrompt)),
           );
         }
         return;
@@ -110,19 +114,21 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       if (_transactionType == TransactionType.transfer) {
         if (_paymentMethod == _transferToWallet) {
            if (mounted) {
-             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cannot transfer to the same wallet.')));
+             final l10n = AppLocalizations.of(context)!;
+             ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.cannotTransferToSameWallet)));
            }
            return;
         }
 
+        final l10n = AppLocalizations.of(context)!;
         final idPrefix = DateTime.now().microsecondsSinceEpoch.toString();
         
         final debitTx = ExpenseModel(
           id: '${idPrefix}_out',
           amount: enteredAmount,
-          category: 'Transfer',
+          category: l10n.transfer,
           date: _selectedDate,
-          note: 'To $_transferToWallet',
+          note: l10n.transferTo(_transferToWallet),
           paymentMethod: _paymentMethod,
           isIncome: false,
         );
@@ -130,9 +136,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
         final creditTx = ExpenseModel(
           id: '${idPrefix}_in',
           amount: enteredAmount,
-          category: 'Transfer',
+          category: l10n.transfer,
           date: _selectedDate,
-          note: 'From $_paymentMethod',
+          note: l10n.transferFrom(_paymentMethod),
           paymentMethod: _transferToWallet,
           isIncome: true,
         );
@@ -141,10 +147,11 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
         await context.read<ExpenseProvider>().addExpense(creditTx);
 
       } else {
+        final l10n = AppLocalizations.of(context)!;
         final newTransaction = ExpenseModel(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
           amount: enteredAmount,
-          category: _transactionType == TransactionType.income ? 'Allowance/Income' : (_selectedCategory ?? context.read<ExpenseProvider>().categories.first.name),
+          category: _transactionType == TransactionType.income ? l10n.allowanceIncome : (_selectedCategory ?? context.read<ExpenseProvider>().categories.first.name),
           date: _selectedDate,
           note: _noteController.text.trim(),
           paymentMethod: _paymentMethod,
@@ -158,8 +165,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('System Error: $e'), backgroundColor: Colors.red),
+          SnackBar(content: Text(l10n.systemError(e.toString())), backgroundColor: Colors.red),
         );
       }
     }
@@ -174,6 +182,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
     final wallets = context.watch<ExpenseProvider>().wallets.map((w) => w.name).toList();
     final currencyProvider = context.watch<CurrencyProvider>();
@@ -196,10 +205,10 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
           children: [
             Text(
               _isEditing
-                ? (_transactionType == TransactionType.income ? 'Edit Income' : 'Edit Expense')
-                : _transactionType == TransactionType.income ? 'Add Funds to Wallet'
-                : _transactionType == TransactionType.transfer ? 'Transfer Funds'
-                : 'Add New Expense',
+                ? (_transactionType == TransactionType.income ? l10n.editIncome : l10n.editExpense)
+                : _transactionType == TransactionType.income ? l10n.addFundsToWallet
+                : _transactionType == TransactionType.transfer ? l10n.transferFunds
+                : l10n.addNewExpense,
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -209,10 +218,10 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                 style: SegmentedButton.styleFrom(
                   textStyle: const TextStyle(fontSize: 12),
                 ),
-                segments: const [
-                  ButtonSegment(value: TransactionType.expense, label: Text('Expense'), icon: Icon(Icons.money_off, size: 16)),
-                  ButtonSegment(value: TransactionType.income, label: Text('Income'), icon: Icon(Icons.attach_money, size: 16)),
-                  ButtonSegment(value: TransactionType.transfer, label: Text('Transfer'), icon: Icon(Icons.swap_horiz, size: 16)),
+                segments: [
+                  ButtonSegment(value: TransactionType.expense, label: Text(l10n.expense), icon: const Icon(Icons.money_off, size: 16)),
+                  ButtonSegment(value: TransactionType.income, label: Text(l10n.income), icon: const Icon(Icons.attach_money, size: 16)),
+                  ButtonSegment(value: TransactionType.transfer, label: Text(l10n.transfer), icon: const Icon(Icons.swap_horiz, size: 16)),
                 ],
                 selected: {_transactionType},
                 onSelectionChanged: (Set<TransactionType> newSelection) {
@@ -225,7 +234,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               decoration: InputDecoration(
-                labelText: 'Amount',
+                labelText: l10n.amount,
                 prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
                 border: const OutlineInputBorder(),
               ),
@@ -237,7 +246,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _paymentMethod,
-                      decoration: const InputDecoration(labelText: 'From', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l10n.fromWallet, border: const OutlineInputBorder()),
                       items: wallets.map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 14)))).toList(),
                       onChanged: (val) => setState(() => _paymentMethod = val!),
                     ),
@@ -249,7 +258,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _transferToWallet,
-                      decoration: const InputDecoration(labelText: 'To', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: l10n.toWallet, border: const OutlineInputBorder()),
                       items: wallets.map((w) => DropdownMenuItem(value: w, child: Text(w, style: const TextStyle(fontSize: 14)))).toList(),
                       onChanged: (val) => setState(() => _transferToWallet = val!),
                     ),
@@ -259,9 +268,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
             ] else ...[
               DropdownButtonFormField<String>(
                 value: _paymentMethod,
-                decoration: const InputDecoration(
-                  labelText: 'Wallet / Payment Method',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.walletPaymentMethod,
+                  border: const OutlineInputBorder(),
                 ),
                 items: wallets.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
                 onChanged: (val) => setState(() => _paymentMethod = val!),
@@ -274,10 +283,10 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                   Expanded(
                     child: DropdownButtonFormField<String>(
                       value: _selectedCategory ?? context.watch<ExpenseProvider>().categories.first.name,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                      decoration: InputDecoration(
+                        labelText: l10n.category,
+                        border: const OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                       ),
                       isExpanded: true,
                       items: context.watch<ExpenseProvider>().categories.map((catObj) {
@@ -336,9 +345,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
             if (_transactionType != TransactionType.transfer) ...[
               TextField(
                 controller: _noteController,
-                decoration: const InputDecoration(
-                  labelText: 'Note (Optional)',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.noteOptional,
+                  border: const OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 24),
@@ -348,7 +357,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(_isEditing ? 'Update Transaction' : 'Save Transaction', style: const TextStyle(fontSize: 16)),
+              child: Text(_isEditing ? l10n.updateTransaction : l10n.saveTransaction, style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),

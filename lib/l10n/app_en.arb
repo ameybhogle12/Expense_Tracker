@@ -1,0 +1,574 @@
+{
+  "appTitle": "Expense Tracker",
+  "settingsTitle": "Settings",
+  "requireAuth": "Require Authentication",
+  "requireAuthDesc": "Lock app with Fingerprint or PIN",
+  "themeMode": "Theme Mode",
+  "currentTheme": "Current: {mode}",
+  "@currentTheme": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "currency": "Currency",
+  "currentCurrency": "Current: {name} ({code} {symbol})",
+  "@currentCurrency": {
+    "placeholders": {
+      "name": { "type": "String" },
+      "code": { "type": "String" },
+      "symbol": { "type": "String" }
+    }
+  },
+  "language": "Language",
+  "restartTour": "Restart Guided Tour",
+  "restartTourDesc": "Replay the step-by-step feature tour",
+  "shareFeedback": "Share Feedback & Suggestions",
+  "shareFeedbackDesc": "Rate your experience and vote on features",
+  "backupData": "Backup Data",
+  "backupDataDesc": "Save all your data to a file you can keep safe",
+  "restoreData": "Restore Data",
+  "restoreDataDesc": "Replace current data with a backup file",
+  "manageWallets": "Manage Wallets",
+  "manageWalletsDesc": "Configure accounts and starting balances",
+  "manageBudgets": "Manage Budgets",
+  "manageBudgetsDesc": "Set custom monthly limits for categories",
+  "manageCategories": "Manage Categories",
+  "manageCategoriesDesc": "Add or remove custom categories",
+  "backupSuccess": "Backup saved. Keep this file safe to restore later.",
+  "backupCancelled": "Backup cancelled.",
+  "backupFailed": "Backup failed: {error}",
+  "@backupFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "restoreDialogTitle": "Restore from backup?",
+  "restoreDialogContent": "This replaces ALL current data in the app with the contents of the backup file. This cannot be undone.",
+  "cancel": "Cancel",
+  "restore": "Restore",
+  "restoreSuccess": "Backup restored successfully.",
+  "restoreFailed": "Restore failed: {error}",
+  "@restoreFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "tourStarted": "Guided tour started!",
+  "feedbackError": "Could not open feedback form",
+  "myWallets": "My Wallets",
+  "noWalletsConfigured": "No wallets configured",
+  "totalSpentThisMonth": "Total Spent This Month",
+  "income": "Income",
+  "expenses": "Expenses",
+  "savings": "Savings",
+  "percentSaved": "{percent}% saved",
+  "@percentSaved": {
+    "placeholders": {
+      "percent": { "type": "String" }
+    }
+  },
+  "overspent": "Overspent",
+  "upcomingBills": "Upcoming Bills",
+  "pendingBills": "{count} pending",
+  "@pendingBills": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "noUpcomingBills": "No upcoming bills for the rest of this month. 🎉",
+  "emi": "EMI",
+  "sub": "Sub",
+  "dueToday": "Due today",
+  "dueTomorrow": "Due tomorrow",
+  "dueOn": "Due on {date}",
+  "@dueOn": {
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+  "totalCommitted": "Total Committed",
+  "recentTransactions": "Recent Transactions",
+  "seeAll": "See All",
+  "addedFunds": "Added Funds",
+  "editBudget": "Edit Budget: {categoryName}",
+  "@editBudget": {
+    "placeholders": {
+      "categoryName": { "type": "String" }
+    }
+  },
+  "monthlyBudgetLimit": "Monthly Budget Limit",
+  "pleaseEnterAmount": "Please enter an amount",
+  "pleaseEnterValidNumber": "Please enter a valid positive number",
+  "clear": "Clear",
+  "budgetCleared": "Budget for {categoryName} cleared.",
+  "@budgetCleared": {
+    "placeholders": {
+      "categoryName": { "type": "String" }
+    }
+  },
+  "save": "Save",
+  "budgetSet": "Budget for {categoryName} set to {amount}.",
+  "@budgetSet": {
+    "placeholders": {
+      "categoryName": { "type": "String" },
+      "amount": { "type": "String" }
+    }
+  },
+  "budgets": "Budgets",
+  "manage": "Manage",
+  "noBudgetsSet": "No budgets set yet. Tap Manage to set monthly limits for the categories you want to track.",
+  "overBudget": "{amount} over budget",
+  "@overBudget": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "remaining": "{amount} remaining",
+  "@remaining": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "spendingByCategory": "Spending by Category",
+  "noSpendingData": "No spending data for this month.",
+  "total": "Total",
+  "savingsGoals": "Savings Goals",
+  "noSavingsGoals": "No savings goals set yet.\nHead to the Goals tab to create one!",
+  "overdue": "Overdue",
+  "completed": "Completed! 🎉",
+  "onTrack": "On track",
+  "inProgress": "In progress",
+  "justStarted": "Just started",
+  "notEnoughDataForChart": "Not enough data for trend chart.",
+  "incomeVsExpenses": "Income vs Expenses",
+  "mainBank": "Main Bank",
+  "cash": "Cash",
+  "validAmountPrompt": "Please enter a valid amount. (e.g. 2000)",
+  "cannotTransferToSameWallet": "Cannot transfer to the same wallet.",
+  "transfer": "Transfer",
+  "transferTo": "To {walletName}",
+  "@transferTo": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "transferFrom": "From {walletName}",
+  "@transferFrom": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "allowanceIncome": "Allowance/Income",
+  "systemError": "System Error: {error}",
+  "@systemError": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "editIncome": "Edit Income",
+  "editExpense": "Edit Expense",
+  "addFundsToWallet": "Add Funds to Wallet",
+  "transferFunds": "Transfer Funds",
+  "addNewExpense": "Add New Expense",
+  "expense": "Expense",
+  "amount": "Amount",
+  "fromWallet": "From",
+  "toWallet": "To",
+  "walletPaymentMethod": "Wallet / Payment Method",
+  "category": "Category",
+  "noteOptional": "Note (Optional)",
+  "updateTransaction": "Update Transaction",
+  "saveTransaction": "Save Transaction",
+  "createWallet": "Create Wallet",
+  "walletName": "Wallet Name",
+  "walletNameHint": "e.g. HDFC Credit Card",
+  "pleaseEnterWalletName": "Please enter a wallet name",
+  "walletNameExists": "Wallet name already exists",
+  "startingBalanceOptional": "Starting Balance (Optional)",
+  "pleaseEnterValidBalance": "Please enter a valid starting balance",
+  "cancel": "Cancel",
+  "create": "Create",
+  "walletCreated": "Wallet \"{walletName}\" created successfully.",
+  "@walletCreated": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "renameWallet": "Rename Wallet",
+  "walletRenamed": "Wallet renamed to \"{walletName}\".",
+  "@walletRenamed": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "cannotDelete": "Cannot Delete",
+  "mustKeepOneWallet": "You must keep at least one active wallet in the app.",
+  "ok": "OK",
+  "confirmDelete": "Confirm Delete",
+  "confirmDeleteWalletMsg": "Are you sure you want to delete \"{walletName}\"?\n\nNote: Transactions previously linked to this wallet will remain in history, but they won't affect any active wallet balances.",
+  "@confirmDeleteWalletMsg": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "delete": "Delete",
+  "walletDeleted": "Wallet \"{walletName}\" deleted.",
+  "@walletDeleted": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "totalNetWorth": "Total Net Worth",
+  "balanceOverdrawn": "Balance Overdrawn",
+  "availableBalance": "Available Balance",
+  "addWallet": "Add Wallet",
+  "setBudgetFor": "Set Budget: {categoryName}",
+  "@setBudgetFor": {
+    "placeholders": {
+      "categoryName": { "type": "String" }
+    }
+  },
+  "enterMonthlyBudgetLimit": "Enter the monthly budget limit for this category. The app will track your spending against this limit.",
+  "budgetLimitTitle": "Budget Limit",
+  "budgetLimitHint": "e.g. 1000",
+  "clearBudget": "Clear Budget",
+  "noCategoriesFound": "No categories found.",
+  "customizedBudgetsCount": "Customized Budgets: {count}",
+  "@customizedBudgetsCount": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  },
+  "tapCategoryToSetBudget": "Tap any category to set or edit its custom monthly budget limit.",
+  "usingDefaultLimit": "Using default limit ({amount})",
+  "@usingDefaultLimit": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "confirmDeleteCategoryMsg": "Are you sure you want to delete '{categoryName}'?",
+  "@confirmDeleteCategoryMsg": {
+    "placeholders": {
+      "categoryName": { "type": "String" }
+    }
+  },
+  "categoryDeleted": "{categoryName} deleted",
+  "@categoryDeleted": {
+    "placeholders": {
+      "categoryName": { "type": "String" }
+    }
+  },
+  "customCategory": "Custom Category",
+  "defaultCategory": "Default Category",
+  "newCategory": "New Category",
+  "createCategory": "Create Category",
+  "categoryName": "Category Name",
+  "selectColor": "Select Color",
+  "selectIcon": "Select Icon",
+  "pleaseEnterName": "Please enter a name",
+  "categoryAlreadyExists": "Category already exists",
+  "tripSplits": "Trip Splits",
+  "noTripsYet": "No trips yet",
+  "tapToCreateTrip": "Tap + to create your first group trip!",
+  "deleteTrip": "Delete Trip?",
+  "confirmDeleteTripMsg": "This will permanently delete \"{tripName}\" and all its expenses.",
+  "@confirmDeleteTripMsg": {
+    "placeholders": {
+      "tripName": { "type": "String" }
+    }
+  },
+  "expenseCountString": "{count, plural, =1{1 expense} other{{count} expenses}}",
+  "@expenseCountString": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "newTrip": "New Trip",
+  "tripNameTitle": "Trip Name",
+  "tripNameHint": "e.g. Lonavala Day Trip",
+  "addMember": "Add Member",
+  "memberHint": "e.g. Rahul",
+  "typeNameToAdd": "Type a name and press Enter to add",
+  "membersAddedCount": "{count, plural, =1{1 member added} other{{count} members added}}",
+  "@membersAddedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "enterTripName": "Enter a trip name!",
+  "addAtLeastTwoMembers": "Add at least 2 members!",
+  "memberAlreadyAdded": "{name} is already added!",
+  "@memberAlreadyAdded": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "settle": "Settle",
+  "removeMember": "Remove Member",
+  "totalSpent": "Total Spent",
+  "tripMembersAndExpenses": "{membersCount, plural, =1{1 member} other{{membersCount} members}} · {expensesCount, plural, =1{1 expense} other{{expensesCount} expenses}}",
+  "@tripMembersAndExpenses": {
+    "placeholders": {
+      "membersCount": { "type": "int" },
+      "expensesCount": { "type": "int" }
+    }
+  },
+  "balances": "Balances",
+  "expenses": "Expenses",
+  "noExpensesYetTapPlus": "No expenses yet.\nTap + to add the first one!",
+  "paidByAndSplit": "Paid by {payer} · Split {splitCount}",
+  "@paidByAndSplit": {
+    "placeholders": {
+      "payer": { "type": "String" },
+      "splitCount": { "type": "int" }
+    }
+  },
+  "addExpenseTitle": "Add Expense",
+  "editExpenseTitle": "Edit Expense",
+  "description": "Description",
+  "expenseDescHint": "e.g. Toll booth",
+  "amount": "Amount",
+  "paidByLabel": "Paid by",
+  "splitAmong": "Split among:",
+  "fillInAllFields": "Fill in all fields properly!",
+  "selectAtLeastOnePerson": "Select at least 1 person to split with!",
+  "add": "Add",
+  "update": "Update",
+  "nameLabel": "Name",
+  "memberAlreadyInTrip": "{name} is already in the trip!",
+  "@memberAlreadyInTrip": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "tripNeedsTwoMembers": "A trip needs at least 2 members!",
+  "tapMemberToRemove": "Tap a member to remove them.",
+  "inCountExpenses": "In {count, plural, =1{1 expense} other{{count} expenses}}",
+  "@inCountExpenses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "notInAnyExpenses": "Not in any expenses",
+  "removeMemberTitle": "Remove {member}?",
+  "@removeMemberTitle": {
+    "placeholders": {
+      "member": { "type": "String" }
+    }
+  },
+  "willAffectCountExpenses": "This will affect {count, plural, =1{1 expense} other{{count} expenses}}.",
+  "@willAffectCountExpenses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "removeMemberWarningBody": "• Expenses they paid for will be deleted\n• They will be removed from all splits\n• Remaining members' shares will change",
+  "remove": "Remove",
+  "memberRemoved": "{member} removed",
+  "@memberRemoved": {
+    "placeholders": {
+      "member": { "type": "String" }
+    }
+  },
+  "memberRemovedWithUpdates": "{member} removed · {count, plural, =1{1 expense} other{{count} expenses}} updated",
+  "@memberRemovedWithUpdates": {
+    "placeholders": {
+      "member": { "type": "String" },
+      "count": { "type": "int" }
+    }
+  },
+  "analyzingExpenses": "Analyzing expenses...",
+  "calculatingBalances": "Calculating balances...",
+  "optimizingTransfers": "Optimizing transfers...",
+  "done": "Done!",
+  "calculatingSplits": "Calculating Splits...",
+  "runningDebtOptimization": "Running debt optimization algorithm",
+  "settleUp": "Settle Up",
+  "allSettled": "All settled!",
+  "noOneOwesAnything": "No one owes anyone anything.",
+  "allPaymentsDone": "🎉 All payments done!",
+  "paidOfTotal": "{paidCount} of {totalCount} paid",
+  "@paidOfTotal": {
+    "placeholders": {
+      "paidCount": { "type": "int" },
+      "totalCount": { "type": "int" }
+    }
+  },
+  "everyoneSquaredUp": "Everyone is squared up!",
+  "optimizedForMinimumTransfers": "Optimized for minimum transfers",
+  "pays": "pays",
+  "receives": "receives",
+  "paidTapToUndo": "Paid ✓  (tap to undo)",
+  "markAsPaid": "Mark as Paid",
+  "individualBreakdown": "Individual Breakdown",
+  "paidCheck": "Paid ✓",
+  "getsBackAmount": "Gets back {amount}",
+  "@getsBackAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "owesAmount": "Owes {amount}",
+  "@owesAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "settled": "Settled",
+  "notInAnySplits": "Not in any splits",
+  "confirmPayment": "Confirm Payment",
+  "hasPaidPart": " has paid ",
+  "toPart": " to ",
+  "questionMarkPart": "?",
+  "notYet": "Not yet",
+  "yesPaid": "Yes, Paid!",
+  "edit": "Edit",
+  "deleteSubscriptionTitle": "Delete subscription?",
+  "deleteSubscriptionWarning": "\"{name}\" will be removed. This won't delete transactions already logged.",
+  "@deleteSubscriptionWarning": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "recurringSubscriptions": "Recurring Subscriptions",
+  "noActiveSubscriptions": "No active subscriptions.",
+  "billedOnDay": "Billed on day {day} • {method}",
+  "@billedOnDay": {
+    "placeholders": {
+      "day": { "type": "int" },
+      "method": { "type": "String" }
+    }
+  },
+  "newSubscription": "New Subscription",
+  "editSubscriptionTitle": "Edit Subscription",
+  "addSubscriptionTitle": "Add Subscription",
+  "payFrom": "Pay From",
+  "dayOfMonth": "Day of Month",
+  "subscriptionNameHint": "Subscription Name (e.g. Netflix)",
+  "updateSubscription": "Update Subscription",
+  "saveSubscription": "Save Subscription",
+  "enterValidAmount": "Please enter a valid amount.",
+  "thisRecurringCharge": "this recurring charge",
+  "formattedNote": "\"{note}\"",
+  "@formattedNote": {
+    "placeholders": {
+      "note": { "type": "String" }
+    }
+  },
+  "possibleDuplicateTitle": "Possible duplicate",
+  "possibleDuplicateWarning": "You already have a subscription that matches {label}. Add it anyway?",
+  "@possibleDuplicateWarning": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "addAnyway": "Add Anyway",
+  "errorMessage": "Error: {error}",
+  "@errorMessage": {
+    "placeholders": {
+      "error": { "type": "String" }
+    }
+  },
+  "deleteItemTitle": "Delete {type}?",
+  "@deleteItemTitle": {
+    "placeholders": {
+      "type": { "type": "String" }
+    }
+  },
+  "itemWillBeRemovedPermanently": "\"{name}\" will be removed permanently.",
+  "@itemWillBeRemovedPermanently": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "goalsAndEmis": "Goals & EMIs",
+  "noCostEmisAndDebt": "No-Cost EMIs & Debt",
+  "noGoalsSetTapPlus": "No goals set yet. Tap + to set one!",
+  "editGoal": "Edit goal",
+  "deleteGoal": "Delete goal",
+  "amountSaved": "{amount} saved",
+  "@amountSaved": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "targetAmount": "Target: {amount}",
+  "@targetAmount": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "addFunds": "Add Funds",
+  "noActiveEmisOrDebts": "No active EMIs or debts.",
+  "editEmi": "Edit EMI",
+  "deleteEmi": "Delete EMI",
+  "monthlyInstallmentDay": "{installment} / mo • Day {day}",
+  "@monthlyInstallmentDay": {
+    "placeholders": {
+      "installment": { "type": "String" },
+      "day": { "type": "int" }
+    }
+  },
+  "monthsPaidOfTotal": "{paid} / {total} months paid",
+  "@monthsPaidOfTotal": {
+    "placeholders": {
+      "paid": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "totalAmountLabel": "Total: {amount}",
+  "@totalAmountLabel": {
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+  "editSavingsGoal": "Edit Savings Goal",
+  "newSavingsGoal": "New Savings Goal",
+  "goalNameHint": "Goal Name (e.g. iPhone)",
+  "targetAmountLabel": "Target Amount",
+  "colorLabel": "Color:",
+  "updateGoal": "Update Goal",
+  "createGoal": "Create Goal",
+  "editNoCostEmi": "Edit No-Cost EMI",
+  "newNoCostEmi": "New No-Cost EMI",
+  "itemNameHint": "Item Name (e.g. iPhone)",
+  "totalBillAmount": "Total Bill Amount",
+  "totalDurationMonths": "Total Duration (Months)",
+  "paymentDay": "Payment Day",
+  "payFromWallet": "Pay From Wallet",
+  "updateEmi": "Update EMI",
+  "addEmiTracker": "Add EMI Tracker",
+  "depositToGoal": "Deposit to {goalName}",
+  "@depositToGoal": {
+    "placeholders": {
+      "goalName": { "type": "String" }
+    }
+  },
+  "amountToMoveToSavings": "Amount to move to savings",
+  "withdrawFromWallet": "Withdraw From (Wallet)",
+  "deposit": "Deposit",
+  "navHome": "Home",
+  "navCharts": "Charts",
+  "navSubs": "Subs",
+  "navGoals": "Goals",
+  "navSplit": "Split",
+  "analytics": "Analytics",
+  "thisMonth": "This Month",
+  "lastMonth": "Last Month",
+  "last3Months": "Last 3 Months",
+  "yearToDate": "Year to Date",
+  "editWallet": "Edit Wallet",
+  "adjustBalance": "Adjust Balance",
+  "adjustBalanceHint": "Leave empty to keep current balance",
+  "newBalance": "New Balance",
+  "balanceAdjusted": "Balance adjusted for {walletName}",
+  "@balanceAdjusted": {
+    "placeholders": {
+      "walletName": { "type": "String" }
+    }
+  },
+  "deleteWalletWarning": "This will also delete all {count} transaction(s) linked to this wallet. This cannot be undone.",
+  "@deleteWalletWarning": {
+    "placeholders": {
+      "count": { "type": "String" }
+    }
+  }
+}

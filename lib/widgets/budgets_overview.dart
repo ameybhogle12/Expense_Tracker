@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../screens/manage_budgets_screen.dart';
 import '../models/budget_model.dart';
 import '../models/category_model.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class BudgetsOverview extends StatelessWidget {
   const BudgetsOverview({super.key});
@@ -20,6 +20,7 @@ class BudgetsOverview extends StatelessWidget {
     final formKey = GlobalKey<FormState>();
     final isCustomized = provider.getBudgetForCategory(category.name) != null;
     final currencyProvider = context.read<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     showModalBottomSheet(
       context: context,
@@ -54,7 +55,7 @@ class BudgetsOverview extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Edit Budget: ${category.name}',
+                        l10n.editBudget(category.name),
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                       ),
                     ),
@@ -65,17 +66,17 @@ class BudgetsOverview extends StatelessWidget {
                   controller: controller,
                   keyboardType: const TextInputType.numberWithOptions(decimal: false),
                   decoration: InputDecoration(
-                    labelText: 'Monthly Budget Limit',
+                    labelText: l10n.monthlyBudgetLimit,
                     prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
                     border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter an amount';
+                      return l10n.pleaseEnterAmount;
                     }
                     final amount = double.tryParse(value);
                     if (amount == null || amount <= 0) {
-                      return 'Please enter a valid positive number';
+                      return l10n.pleaseEnterValidNumber;
                     }
                     return null;
                   },
@@ -92,7 +93,7 @@ class BudgetsOverview extends StatelessWidget {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Budget for ${category.name} cleared.'),
+                                content: Text(l10n.budgetCleared(category.name)),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -101,7 +102,7 @@ class BudgetsOverview extends StatelessWidget {
                             side: const BorderSide(color: Colors.red),
                             foregroundColor: Colors.red,
                           ),
-                          child: const Text('Clear'),
+                          child: Text(l10n.clear),
                         ),
                       ),
                     if (isCustomized) const SizedBox(width: 12),
@@ -117,13 +118,13 @@ class BudgetsOverview extends StatelessWidget {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Budget for ${category.name} set to ${currencyProvider.format(amount)}.'),
+                                content: Text(l10n.budgetSet(category.name, currencyProvider.format(amount))),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
                           }
                         },
-                        child: const Text('Save'),
+                        child: Text(l10n.save),
                       ),
                     ),
                   ],
@@ -140,6 +141,7 @@ class BudgetsOverview extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<ExpenseProvider>();
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     // Only show budgets the user has explicitly set, so the home screen
     // doesn't nag with phantom limits the moment any category is used.
@@ -155,7 +157,7 @@ class BudgetsOverview extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Budgets',
+              l10n.budgets,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             TextButton.icon(
@@ -166,15 +168,15 @@ class BudgetsOverview extends StatelessWidget {
                 );
               },
               icon: const Icon(Icons.tune, size: 18),
-              label: const Text('Manage'),
+              label: Text(l10n.manage),
             ),
           ],
         ),
         const SizedBox(height: 12),
         if (activeCategories.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('No budgets set yet. Tap Manage to set monthly limits for the categories you want to track.'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: Text(l10n.noBudgetsSet),
           ),
         ...activeCategories.map((category) {
           final spent = provider.getCategorySpending(category);
@@ -248,8 +250,8 @@ class BudgetsOverview extends StatelessWidget {
                       children: [
                         Text(
                           isOverspent
-                              ? '${currencyProvider.format(spent - budget)} over budget'
-                              : '${currencyProvider.format(budget - spent)} remaining',
+                              ? l10n.overBudget(currencyProvider.format(spent - budget))
+                              : l10n.remaining(currencyProvider.format(budget - spent)),
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../models/goal_model.dart';
 import '../models/emi_model.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 Future<bool?> _confirmDelete(BuildContext context, String type, String name) {
+  final l10n = AppLocalizations.of(context)!;
   return showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: Text('Delete $type?'),
-      content: Text('"$name" will be removed permanently.'),
+      title: Text(l10n.deleteItemTitle(type)),
+      content: Text(l10n.itemWillBeRemovedPermanently(name)),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: Colors.red),
           onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Delete'),
+          child: Text(l10n.delete),
         ),
       ],
     ),
@@ -29,20 +30,21 @@ class GoalsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Goals & EMIs', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.goalsAndEmis, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSectionHeader(context, 'Savings Goals', Icons.flag, () => _showAddGoalDialog(context)),
+            _buildSectionHeader(context, l10n.savingsGoals, Icons.flag, () => _showAddGoalDialog(context)),
             const SizedBox(height: 16),
             const _GoalsList(),
             const SizedBox(height: 32),
-            _buildSectionHeader(context, 'No-Cost EMIs & Debt', Icons.credit_card, () => _showAddEmiDialog(context)),
+            _buildSectionHeader(context, l10n.noCostEmisAndDebt, Icons.credit_card, () => _showAddEmiDialog(context)),
             const SizedBox(height: 16),
             const _EmisList(),
             const SizedBox(height: 80),
@@ -98,11 +100,12 @@ class _GoalsList extends StatelessWidget {
   Widget build(BuildContext context) {
     final goals = context.watch<ExpenseProvider>().goals;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     if (goals.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text('No goals set yet. Tap + to set one!'),
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(l10n.noGoalsSetTapPlus),
       ));
     }
 
@@ -146,7 +149,7 @@ class _GoalsList extends StatelessWidget {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, color: Colors.grey, size: 20),
-                          tooltip: 'Edit goal',
+                          tooltip: l10n.editGoal,
                           onPressed: () => showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -156,7 +159,7 @@ class _GoalsList extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
-                          tooltip: 'Delete goal',
+                          tooltip: l10n.deleteGoal,
                           onPressed: () async {
                             final ok = await _confirmDelete(context, 'goal', goal.name);
                             if (ok == true && context.mounted) {
@@ -181,11 +184,11 @@ class _GoalsList extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${currencyProvider.format(goal.savedAmount)} saved',
+                      l10n.amountSaved(currencyProvider.format(goal.savedAmount)),
                       style: TextStyle(fontWeight: FontWeight.bold, color: color),
                     ),
                     Text(
-                      'Target: ${currencyProvider.format(goal.targetAmount)}',
+                      l10n.targetAmount(currencyProvider.format(goal.targetAmount)),
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ],
@@ -196,7 +199,7 @@ class _GoalsList extends StatelessWidget {
                     showDialog(context: context, builder: (ctx) => _AddFundsToGoalDialog(goal: goal));
                   },
                   icon: const Icon(Icons.savings, size: 16),
-                  label: const Text('Add Funds'),
+                  label: Text(l10n.addFunds),
                 )
               ],
             ),
@@ -214,11 +217,12 @@ class _EmisList extends StatelessWidget {
   Widget build(BuildContext context) {
     final emis = context.watch<ExpenseProvider>().emis;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     if (emis.isEmpty) {
-      return const Center(child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Text('No active EMIs or debts.'),
+      return Center(child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Text(l10n.noActiveEmisOrDebts),
       ));
     }
 
@@ -253,7 +257,7 @@ class _EmisList extends StatelessWidget {
                       children: [
                         IconButton(
                           icon: const Icon(Icons.edit_outlined, color: Colors.grey, size: 20),
-                          tooltip: 'Edit EMI',
+                          tooltip: l10n.editEmi,
                           onPressed: () => showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
@@ -263,7 +267,7 @@ class _EmisList extends StatelessWidget {
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
-                          tooltip: 'Delete EMI',
+                          tooltip: l10n.deleteEmi,
                           onPressed: () async {
                             final ok = await _confirmDelete(context, 'EMI', emi.itemName);
                             if (ok == true && context.mounted) {
@@ -277,7 +281,7 @@ class _EmisList extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${currencyProvider.format(emi.monthlyInstallment)} / mo • Day ${emi.paymentDay}',
+                  l10n.monthlyInstallmentDay(currencyProvider.format(emi.monthlyInstallment), emi.paymentDay),
                   style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
@@ -292,9 +296,9 @@ class _EmisList extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('${emi.monthsPaid} / ${emi.totalMonths} months paid', style: const TextStyle(fontSize: 12)),
+                    Text(l10n.monthsPaidOfTotal(emi.monthsPaid, emi.totalMonths), style: const TextStyle(fontSize: 12)),
                     Text(
-                      'Total: ${currencyProvider.format(emi.totalAmount)}',
+                      l10n.totalAmountLabel(currencyProvider.format(emi.totalAmount)),
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -325,14 +329,6 @@ class _AddGoalFormState extends State<_AddGoalForm> {
     Colors.teal, Colors.green, Colors.lightGreen, Colors.lime,
     Colors.orange, Colors.deepOrange, Colors.brown, Colors.blueGrey,
   ];
-  final List<IconData> _curatedIcons = [
-    Icons.shopping_cart, Icons.fastfood, Icons.local_cafe, Icons.flight,
-    Icons.directions_car, Icons.train, Icons.hotel, Icons.local_hospital,
-    Icons.fitness_center, Icons.sports_esports, Icons.movie, Icons.music_note,
-    Icons.pets, Icons.school, Icons.work, Icons.home,
-    Icons.build, Icons.auto_awesome, Icons.favorite, Icons.star,
-  ];
-
   late Color _selectedColor;
   late IconData _selectedIcon;
 
@@ -385,18 +381,19 @@ class _AddGoalFormState extends State<_AddGoalForm> {
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardSpace + 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(_isEditing ? 'Edit Savings Goal' : 'New Savings Goal', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(_isEditing ? l10n.editSavingsGoal : l10n.newSavingsGoal, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Goal Name (e.g. iPhone)', border: OutlineInputBorder())),
+          TextField(controller: _nameController, decoration: InputDecoration(labelText: l10n.goalNameHint, border: const OutlineInputBorder())),
           const SizedBox(height: 16),
-          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Target Amount', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
+          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.targetAmountLabel, prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
           const SizedBox(height: 16),
-          const Text('Color:'),
+          Text(l10n.colorLabel),
           Wrap(
             spacing: 8, runSpacing: 8,
             children: _vibrantColors.map((c) => GestureDetector(
@@ -405,7 +402,7 @@ class _AddGoalFormState extends State<_AddGoalForm> {
             )).toList(),
           ),
           const SizedBox(height: 16),
-          FilledButton(onPressed: _submit, child: Text(_isEditing ? 'Update Goal' : 'Create Goal')),
+          FilledButton(onPressed: _submit, child: Text(_isEditing ? l10n.updateGoal : l10n.createGoal)),
         ],
       ),
     );
@@ -480,34 +477,35 @@ class _AddEmiFormState extends State<_AddEmiForm> {
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardSpace + 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(_isEditing ? 'Edit No-Cost EMI' : 'New No-Cost EMI', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(_isEditing ? l10n.editNoCostEmi : l10n.newNoCostEmi, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
-          TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Item Name (e.g. iPhone)', border: OutlineInputBorder())),
+          TextField(controller: _nameController, decoration: InputDecoration(labelText: l10n.itemNameHint, border: const OutlineInputBorder())),
           const SizedBox(height: 16),
-          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Total Bill Amount', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
+          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.totalBillAmount, prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
           const SizedBox(height: 16),
-          TextField(controller: _monthsController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Total Duration (Months)', border: OutlineInputBorder())),
+          TextField(controller: _monthsController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.totalDurationMonths, border: const OutlineInputBorder())),
           const SizedBox(height: 16),
           DropdownButtonFormField<int>(
             value: _paymentDay,
-            decoration: const InputDecoration(labelText: 'Payment Day', border: OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.paymentDay, border: const OutlineInputBorder()),
             items: List.generate(31, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
             onChanged: (val) => setState(() => _paymentDay = val!),
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: _paymentMethod,
-            decoration: const InputDecoration(labelText: 'Pay From Wallet', border: OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.payFromWallet, border: const OutlineInputBorder()),
             items: context.watch<ExpenseProvider>().wallets.map((w) => DropdownMenuItem(value: w.name, child: Text(w.name))).toList(),
             onChanged: (val) => setState(() => _paymentMethod = val!),
           ),
           const SizedBox(height: 16),
-          FilledButton(onPressed: _submit, child: Text(_isEditing ? 'Update EMI' : 'Add EMI Tracker')),
+          FilledButton(onPressed: _submit, child: Text(_isEditing ? l10n.updateEmi : l10n.addEmiTracker)),
         ],
       ),
     );
@@ -532,26 +530,26 @@ class _AddFundsToGoalDialogState extends State<_AddFundsToGoalDialog> {
     _paymentMethod = wallets.isNotEmpty ? wallets.first : 'Main Bank';
   }
 
-  @override
   Widget build(BuildContext context) {
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: Text('Deposit to ${widget.goal.name}'),
+      title: Text(l10n.depositToGoal(widget.goal.name)),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Amount to move to savings', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
+          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: l10n.amountToMoveToSavings, prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: _paymentMethod,
-            decoration: const InputDecoration(labelText: 'Withdraw From (Wallet)', border: OutlineInputBorder()),
+            decoration: InputDecoration(labelText: l10n.withdrawFromWallet, border: const OutlineInputBorder()),
             items: context.watch<ExpenseProvider>().wallets.map((w) => DropdownMenuItem(value: w.name, child: Text(w.name))).toList(),
             onChanged: (val) => setState(() => _paymentMethod = val!),
           ),
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
         ElevatedButton(
           onPressed: () {
             final amount = double.tryParse(_amountController.text.trim());
@@ -559,7 +557,7 @@ class _AddFundsToGoalDialogState extends State<_AddFundsToGoalDialog> {
             context.read<ExpenseProvider>().depositToGoal(widget.goal, amount, _paymentMethod);
             Navigator.pop(context);
           },
-          child: const Text('Deposit'),
+          child: Text(l10n.deposit),
         ),
       ],
     );

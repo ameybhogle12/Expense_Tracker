@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class GoalsProgressSection extends StatelessWidget {
   const GoalsProgressSection({super.key});
@@ -13,13 +14,14 @@ class GoalsProgressSection extends StatelessWidget {
     final goals = provider.goals;
     final theme = Theme.of(context);
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     if (goals.isEmpty) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Savings Goals',
+            l10n.savingsGoals,
             style: theme.textTheme.titleMedium
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
@@ -31,11 +33,11 @@ class GoalsProgressSection extends StatelessWidget {
               side: BorderSide(
                   color: theme.dividerColor.withOpacity(0.1)),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(20),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
               child: Center(
                 child: Text(
-                  'No savings goals set yet.\nHead to the Goals tab to create one!',
+                  l10n.noSavingsGoals,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -49,7 +51,7 @@ class GoalsProgressSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Savings Goals',
+          l10n.savingsGoals,
           style:
               theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
@@ -65,19 +67,19 @@ class GoalsProgressSection extends StatelessWidget {
           String statusText;
           if (goal.deadline != null && DateTime.now().isAfter(goal.deadline!) && progress < 1.0) {
             statusColor = Colors.red;
-            statusText = 'Overdue';
+            statusText = l10n.overdue;
           } else if (progress >= 1.0) {
             statusColor = const Color(0xFF00C853);
-            statusText = 'Completed! 🎉';
+            statusText = l10n.completed;
           } else if (progress >= 0.6) {
             statusColor = const Color(0xFF00C853);
-            statusText = 'On track';
+            statusText = l10n.onTrack;
           } else if (progress >= 0.3) {
             statusColor = Colors.orange;
-            statusText = 'In progress';
+            statusText = l10n.inProgress;
           } else {
             statusColor = theme.colorScheme.primary;
-            statusText = 'Just started';
+            statusText = l10n.justStarted;
           }
 
           final goalColor = Color(goal.colorValue);

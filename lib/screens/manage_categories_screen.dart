@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../models/category_model.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class ManageCategoriesScreen extends StatefulWidget {
   const ManageCategoriesScreen({super.key});
@@ -20,16 +21,17 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Categories'),
+        title: Text(l10n.manageCategories),
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
           final categories = provider.categories;
           
           if (categories.isEmpty) {
-            return const Center(child: Text('No categories found.'));
+            return Center(child: Text(l10n.noCategoriesFound));
           }
 
           return ListView.builder(
@@ -51,13 +53,13 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     context: context,
                     builder: (BuildContext context) {
                       return AlertDialog(
-                        title: const Text("Confirm Delete"),
-                        content: Text("Are you sure you want to delete '${category.name}'?"),
+                        title: Text(l10n.confirmDelete),
+                        content: Text(l10n.confirmDeleteCategoryMsg(category.name)),
                         actions: [
-                          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text("Cancel")),
+                          TextButton(onPressed: () => Navigator.of(context).pop(false), child: Text(l10n.cancel)),
                           TextButton(
                             onPressed: () => Navigator.of(context).pop(true),
-                            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+                            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
                           ),
                         ],
                       );
@@ -66,7 +68,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                 },
                 onDismissed: (_) {
                   provider.deleteCategory(category);
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${category.name} deleted')));
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.categoryDeleted(category.name))));
                 },
                 child: ListTile(
                   leading: CircleAvatar(
@@ -74,7 +76,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                     child: Icon(IconData(category.iconCodePoint, fontFamily: 'MaterialIcons'), color: Color(category.colorValue)),
                   ),
                   title: Text(category.name),
-                  subtitle: Text(category.isCustom ? 'Custom Category' : 'Default Category'),
+                  subtitle: Text(category.isCustom ? l10n.customCategory : l10n.defaultCategory),
                   trailing: category.isCustom ? const Icon(Icons.swipe_left, size: 16, color: Colors.grey) : null,
                 ),
               );
@@ -85,7 +87,7 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddCategoryDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('New Category'),
+        label: Text(l10n.newCategory),
       ),
     );
   }
@@ -134,8 +136,9 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return AlertDialog(
-      title: const Text('Create Category'),
+      title: Text(l10n.createCategory),
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -143,14 +146,14 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
           children: [
             TextField(
               controller: _nameController,
-              decoration: const InputDecoration(
-                labelText: 'Category Name',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: l10n.categoryName,
+                border: const OutlineInputBorder(),
               ),
               textCapitalization: TextCapitalization.words,
             ),
             const SizedBox(height: 20),
-            const Text('Select Color', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(l10n.selectColor, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -168,7 +171,7 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
               }).toList(),
             ),
             const SizedBox(height: 20),
-            const Text('Select Icon', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(l10n.selectIcon, style: const TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
@@ -195,19 +198,19 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(l10n.cancel),
         ),
         ElevatedButton(
           onPressed: () {
             final name = _nameController.text.trim();
             if (name.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a name')));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pleaseEnterName)));
               return;
             }
             
             final provider = context.read<ExpenseProvider>();
             if (provider.getCategoryByName(name) != null) {
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Category already exists')));
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.categoryAlreadyExists)));
               return;
             }
 
@@ -222,7 +225,7 @@ class _AddCategoryDialogState extends State<_AddCategoryDialog> {
             provider.addCategory(newCategory);
             Navigator.of(context).pop();
           },
-          child: const Text('Create'),
+          child: Text(l10n.create),
         ),
       ],
     );

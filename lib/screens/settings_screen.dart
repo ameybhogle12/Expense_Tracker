@@ -13,6 +13,8 @@ import 'manage_budgets_screen.dart';
 import 'manage_wallets_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
+import '../providers/locale_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 
 class SettingsScreen extends StatefulWidget {
@@ -41,38 +43,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _handleBackup() async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       final path = await BackupService.exportBackup();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(path != null
-              ? 'Backup saved. Keep this file safe to restore later.'
-              : 'Backup cancelled.'),
+              ? l10n.backupSuccess
+              : l10n.backupCancelled),
           behavior: SnackBarBehavior.floating,
         ),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Backup failed: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(l10n.backupFailed(e.toString())), backgroundColor: Colors.red),
       );
     }
   }
 
   Future<void> _handleRestore() async {
+    final l10n = AppLocalizations.of(context)!;
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Restore from backup?'),
-        content: const Text(
-            'This replaces ALL current data in the app with the contents of the backup file. This cannot be undone.'),
+        title: Text(l10n.restoreDialogTitle),
+        content: Text(l10n.restoreDialogContent),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Restore'),
+            child: Text(l10n.restore),
           ),
         ],
       ),
@@ -95,8 +98,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Backup restored successfully.'),
+        SnackBar(
+          content: Text(l10n.restoreSuccess),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -108,21 +111,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red),
+        SnackBar(content: Text(l10n.restoreFailed(e.toString())), backgroundColor: Colors.red),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settingsTitle)),
       body: ListView(
         children: [
           if (!kIsWeb) ...[
             SwitchListTile(
-              title: const Text('Require Authentication'),
-              subtitle: const Text('Lock app with Fingerprint or PIN'),
+              title: Text(l10n.requireAuth),
+              subtitle: Text(l10n.requireAuthDesc),
               value: _useBiometrics,
               onChanged: _toggleBiometrics,
               secondary: const Icon(Icons.security),
@@ -132,8 +136,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Consumer<ThemeProvider>(
             builder: (context, themeProvider, child) {
               return ListTile(
-                title: const Text('Theme Mode'),
-                subtitle: Text('Current: ${themeProvider.themeMode.name.toUpperCase()}'),
+                title: Text(l10n.themeMode),
+                subtitle: Text(l10n.currentTheme(themeProvider.themeMode.name.toUpperCase())),
                 leading: const Icon(Icons.palette),
                 trailing: DropdownButton<ThemeMode>(
                   value: themeProvider.themeMode,
@@ -156,9 +160,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Consumer<CurrencyProvider>(
             builder: (context, currencyProvider, child) {
               return ListTile(
-                title: const Text('Currency'),
-                subtitle: Text(
-                    'Current: ${currencyProvider.selectedCurrency.name} (${currencyProvider.code} ${currencyProvider.symbol})'),
+                title: Text(l10n.currency),
+                subtitle: Text(l10n.currentCurrency(currencyProvider.selectedCurrency.name, currencyProvider.code, currencyProvider.symbol)),
                 leading: const Icon(Icons.monetization_on_outlined),
                 trailing: DropdownButton<String>(
                   value: currencyProvider.code,
@@ -178,9 +181,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
           const Divider(),
+          Consumer<LocaleProvider>(
+            builder: (context, localeProvider, child) {
+              return ListTile(
+                title: Text(l10n.language),
+                subtitle: Text(localeProvider.locale?.languageCode == 'ja' ? '日本語' : 'English (System Default)'),
+                leading: const Icon(Icons.language),
+                trailing: DropdownButton<String>(
+                  value: localeProvider.locale?.languageCode ?? 'en',
+                  onChanged: (String? newValue) {
+                    if (newValue == 'ja') {
+                      localeProvider.setLocale(const Locale('ja'));
+                    } else {
+                      localeProvider.setLocale(null); // English / System default
+                    }
+                  },
+                  items: const [
+                    DropdownMenuItem(value: 'en', child: Text('English')),
+                    DropdownMenuItem(value: 'ja', child: Text('日本語')),
+                  ],
+                ),
+              );
+            },
+          ),
+          const Divider(),
           ListTile(
-            title: const Text('Restart Guided Tour'),
-            subtitle: const Text('Replay the step-by-step feature tour'),
+            title: Text(l10n.restartTour),
+            subtitle: Text(l10n.restartTourDesc),
             leading: const Icon(Icons.play_circle_outline),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -194,8 +221,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               });
 
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Guided tour started!'),
+                SnackBar(
+                  content: Text(l10n.tourStarted),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
@@ -203,8 +230,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
           ListTile(
-            title: const Text('Share Feedback & Suggestions'),
-            subtitle: const Text('Rate your experience and vote on features'),
+            title: Text(l10n.shareFeedback),
+            subtitle: Text(l10n.shareFeedbackDesc),
             leading: const Icon(Icons.feedback_outlined),
             trailing: const Icon(Icons.open_in_new),
             onTap: () async {
@@ -212,7 +239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Could not open feedback form')),
+                    SnackBar(content: Text(l10n.feedbackError)),
                   );
                 }
               }
@@ -221,24 +248,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const Divider(),
           ListTile(
-            title: const Text('Backup Data'),
-            subtitle: const Text('Save all your data to a file you can keep safe'),
+            title: Text(l10n.backupData),
+            subtitle: Text(l10n.backupDataDesc),
             leading: const Icon(Icons.backup_outlined),
             trailing: const Icon(Icons.chevron_right),
             onTap: _handleBackup,
           ),
           const Divider(),
           ListTile(
-            title: const Text('Restore Data'),
-            subtitle: const Text('Replace current data with a backup file'),
+            title: Text(l10n.restoreData),
+            subtitle: Text(l10n.restoreDataDesc),
             leading: const Icon(Icons.settings_backup_restore),
             trailing: const Icon(Icons.chevron_right),
             onTap: _handleRestore,
           ),
           const Divider(),
           ListTile(
-            title: const Text('Manage Wallets'),
-            subtitle: const Text('Configure accounts and starting balances'),
+            title: Text(l10n.manageWallets),
+            subtitle: Text(l10n.manageWalletsDesc),
             leading: const Icon(Icons.account_balance_wallet),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -250,8 +277,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
           ListTile(
-            title: const Text('Manage Budgets'),
-            subtitle: const Text('Set custom monthly limits for categories'),
+            title: Text(l10n.manageBudgets),
+            subtitle: Text(l10n.manageBudgetsDesc),
             leading: const Icon(Icons.tune),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -263,8 +290,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const Divider(),
           ListTile(
-            title: const Text('Manage Categories'),
-            subtitle: const Text('Add or remove custom categories'),
+            title: Text(l10n.manageCategories),
+            subtitle: Text(l10n.manageCategoriesDesc),
             leading: const Icon(Icons.category),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
@@ -276,6 +303,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           )
         ],
       ),
+
     );
   }
 }

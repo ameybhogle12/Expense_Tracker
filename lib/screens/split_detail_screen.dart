@@ -8,6 +8,7 @@ import '../models/split_trip_model.dart';
 import '../models/split_expense_model.dart';
 import '../widgets/animations.dart';
 import 'settlement_screen.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class SplitDetailScreen extends StatelessWidget {
   final String tripId;
@@ -22,6 +23,7 @@ class SplitDetailScreen extends StatelessWidget {
     final total = provider.getTripTotal(tripId);
     final colorScheme = Theme.of(context).colorScheme;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
@@ -33,9 +35,9 @@ class SplitDetailScreen extends StatelessWidget {
             child: FilledButton.tonalIcon(
               onPressed: expenses.isEmpty
                   ? null
-                  : () => _showCalculatingAnimation(context, tripId),
+                  : () => _showCalculatingAnimation(context, tripId, l10n),
               icon: const Icon(Icons.handshake_outlined, size: 16),
-              label: const Text('Settle'),
+              label: Text(l10n.settle),
             ),
           ),
           PopupMenuButton<String>(
@@ -47,20 +49,20 @@ class SplitDetailScreen extends StatelessWidget {
               }
             },
             itemBuilder: (ctx) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'add_member',
                 child: ListTile(
-                  leading: Icon(Icons.person_add),
-                  title: Text('Add Member'),
+                  leading: const Icon(Icons.person_add),
+                  title: Text(l10n.addMember),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'remove_member',
                 child: ListTile(
-                  leading: Icon(Icons.person_remove, color: Colors.red),
-                  title: Text('Remove Member', style: TextStyle(color: Colors.red)),
+                  leading: const Icon(Icons.person_remove, color: Colors.red),
+                  title: Text(l10n.removeMember, style: const TextStyle(color: Colors.red)),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
@@ -90,7 +92,7 @@ class SplitDetailScreen extends StatelessWidget {
             child: Column(
               children: [
                 Text(
-                  'Total Spent',
+                  l10n.totalSpent,
                   style: TextStyle(
                     color: colorScheme.onPrimaryContainer.withOpacity(0.7),
                     fontSize: 13,
@@ -106,7 +108,7 @@ class SplitDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${trip.members.length} members · ${expenses.length} expense${expenses.length == 1 ? '' : 's'}',
+                  l10n.tripMembersAndExpenses(trip.members.length, expenses.length),
                   style: TextStyle(
                     color: colorScheme.onPrimaryContainer.withOpacity(0.6),
                     fontSize: 12,
@@ -124,7 +126,7 @@ class SplitDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Balances',
+                    l10n.balances,
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: colorScheme.onSurface.withOpacity(0.7),
@@ -206,7 +208,7 @@ class SplitDetailScreen extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Expenses',
+                l10n.expenses,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: colorScheme.onSurface.withOpacity(0.7),
@@ -219,7 +221,7 @@ class SplitDetailScreen extends StatelessWidget {
             child: expenses.isEmpty
                 ? Center(
                     child: Text(
-                      'No expenses yet.\nTap + to add the first one!',
+                      l10n.noExpensesYetTapPlus,
                       textAlign: TextAlign.center,
                       style: TextStyle(
                           color: colorScheme.onSurface.withOpacity(0.4)),
@@ -273,7 +275,7 @@ class SplitDetailScreen extends StatelessWidget {
                                     fontWeight: FontWeight.w600),
                               ),
                               subtitle: Text(
-                                'Paid by ${expense.paidBy} · Split ${expense.splitAmong.length}',
+                                l10n.paidByAndSplit(expense.paidBy, expense.splitAmong.length),
                                 style: TextStyle(
                                     fontSize: 12,
                                     color:
@@ -316,7 +318,7 @@ class SplitDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showCalculatingAnimation(BuildContext context, String tripId) {
+  void _showCalculatingAnimation(BuildContext context, String tripId, AppLocalizations l10n) {
     showGeneralDialog(
       context: context,
       barrierDismissible: false,
@@ -335,6 +337,7 @@ class SplitDetailScreen extends StatelessWidget {
       },
       pageBuilder: (context, animation, secondaryAnimation) {
         return _CalculatingOverlay(
+          l10n: l10n,
           onDone: () {
             Navigator.pop(context); // close overlay
             Navigator.push(
@@ -359,6 +362,7 @@ class SplitDetailScreen extends StatelessWidget {
         : List<String>.from(trip.members);
 
     final currencyProvider = context.read<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) {
@@ -366,17 +370,17 @@ class SplitDetailScreen extends StatelessWidget {
           builder: (ctx, setDialogState) {
             return AlertDialog(
               title: Text(
-                  existingExpense == null ? 'Add Expense' : 'Edit Expense'),
+                  existingExpense == null ? l10n.addExpenseTitle : l10n.editExpenseTitle),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     TextField(
                       controller: descController,
-                      decoration: const InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'e.g. Toll booth',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.description,
+                        hintText: l10n.expenseDescHint,
+                        border: const OutlineInputBorder(),
                       ),
                       textCapitalization: TextCapitalization.sentences,
                     ),
@@ -386,7 +390,7 @@ class SplitDetailScreen extends StatelessWidget {
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
                       decoration: InputDecoration(
-                        labelText: 'Amount',
+                        labelText: l10n.amount,
                         prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
                         border: const OutlineInputBorder(),
                       ),
@@ -394,9 +398,9 @@ class SplitDetailScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     DropdownButtonFormField<String>(
                       value: paidBy,
-                      decoration: const InputDecoration(
-                        labelText: 'Paid by',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.paidByLabel,
+                        border: const OutlineInputBorder(),
                       ),
                       isExpanded: true,
                       items: trip.members
@@ -411,7 +415,7 @@ class SplitDetailScreen extends StatelessWidget {
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        'Split among:',
+                        l10n.splitAmong,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -448,7 +452,7 @@ class SplitDetailScreen extends StatelessWidget {
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Cancel'),
+                  child: Text(l10n.cancel),
                 ),
                 FilledButton(
                   onPressed: () {
@@ -458,16 +462,15 @@ class SplitDetailScreen extends StatelessWidget {
 
                     if (amount == null || amount <= 0 || desc.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Fill in all fields properly!')),
+                        SnackBar(
+                            content: Text(l10n.fillInAllFields)),
                       );
                       return;
                     }
                     if (splitAmong.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text(
-                                'Select at least 1 person to split with!')),
+                        SnackBar(
+                            content: Text(l10n.selectAtLeastOnePerson)),
                       );
                       return;
                     }
@@ -508,7 +511,7 @@ class SplitDetailScreen extends StatelessWidget {
 
                     Navigator.pop(ctx);
                   },
-                  child: Text(existingExpense == null ? 'Add' : 'Update'),
+                  child: Text(existingExpense == null ? l10n.add : l10n.update),
                 ),
               ],
             );
@@ -520,35 +523,36 @@ class SplitDetailScreen extends StatelessWidget {
 
   void _showAddMemberDialog(BuildContext context, SplitTripModel trip) {
     final controller = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Member'),
+        title: Text(l10n.addMember),
         content: TextField(
           controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Name',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: l10n.nameLabel,
+            border: const OutlineInputBorder(),
           ),
           textCapitalization: TextCapitalization.words,
         ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+              onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           FilledButton(
             onPressed: () {
               final name = controller.text.trim();
               if (name.isEmpty) return;
               if (trip.members.contains(name)) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('$name is already in the trip!')),
+                  SnackBar(content: Text(l10n.memberAlreadyInTrip(name))),
                 );
                 return;
               }
               context.read<SplitProvider>().addMemberToTrip(trip.id, name);
               Navigator.pop(ctx);
             },
-            child: const Text('Add'),
+            child: Text(l10n.add),
           ),
         ],
       ),
@@ -556,9 +560,10 @@ class SplitDetailScreen extends StatelessWidget {
   }
 
   void _showRemoveMemberDialog(BuildContext context, SplitTripModel trip) {
+    final l10n = AppLocalizations.of(context)!;
     if (trip.members.length <= 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('A trip needs at least 2 members!')),
+        SnackBar(content: Text(l10n.tripNeedsTwoMembers)),
       );
       return;
     }
@@ -570,14 +575,14 @@ class SplitDetailScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Remove Member'),
+        title: Text(l10n.removeMember),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Tap a member to remove them.',
+                l10n.tapMemberToRemove,
                 style: TextStyle(color: colorScheme.onSurface.withOpacity(0.6), fontSize: 13),
               ),
               const SizedBox(height: 12),
@@ -598,16 +603,16 @@ class SplitDetailScreen extends StatelessWidget {
                   title: Text(member),
                   subtitle: involvedCount > 0
                       ? Text(
-                          'In $involvedCount expense${involvedCount == 1 ? '' : 's'}',
+                          l10n.inCountExpenses(involvedCount),
                           style: TextStyle(fontSize: 12, color: Colors.orange.shade700),
                         )
-                      : const Text('Not in any expenses', style: TextStyle(fontSize: 12)),
+                      : Text(l10n.notInAnyExpenses, style: const TextStyle(fontSize: 12)),
                   trailing: const Icon(Icons.close, color: Colors.red, size: 20),
                   contentPadding: EdgeInsets.zero,
                   onTap: () {
                     Navigator.pop(ctx);
                     // Show confirmation with impact warning
-                    _confirmRemoveMember(context, trip, member, involvedCount);
+                    _confirmRemoveMember(context, trip, member, involvedCount, l10n);
                   },
                 );
               }),
@@ -615,7 +620,7 @@ class SplitDetailScreen extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
         ],
       ),
     );
@@ -626,13 +631,14 @@ class SplitDetailScreen extends StatelessWidget {
     SplitTripModel trip,
     String member,
     int involvedCount,
+    AppLocalizations l10n,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('Remove $member?'),
+        title: Text(l10n.removeMemberTitle(member)),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,7 +657,7 @@ class SplitDetailScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'This will affect $involvedCount expense${involvedCount == 1 ? '' : 's'}.',
+                        l10n.willAffectCountExpenses(involvedCount),
                         style: TextStyle(fontSize: 13, color: Colors.orange.shade800),
                       ),
                     ),
@@ -661,9 +667,7 @@ class SplitDetailScreen extends StatelessWidget {
               const SizedBox(height: 12),
             ],
             Text(
-              '• Expenses they paid for will be deleted\n'
-              '• They will be removed from all splits\n'
-              '• Remaining members\' shares will change',
+              l10n.removeMemberWarningBody,
               style: TextStyle(
                 fontSize: 13,
                 color: colorScheme.onSurface.withOpacity(0.7),
@@ -673,7 +677,7 @@ class SplitDetailScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l10n.cancel)),
           FilledButton(
             onPressed: () async {
               Navigator.pop(ctx);
@@ -682,14 +686,14 @@ class SplitDetailScreen extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      '$member removed${affected > 0 ? ' · $affected expense${affected == 1 ? '' : 's'} updated' : ''}',
+                      affected > 0 ? l10n.memberRemovedWithUpdates(member, affected) : l10n.memberRemoved(member),
                     ),
                   ),
                 );
               }
             },
             style: FilledButton.styleFrom(backgroundColor: colorScheme.error),
-            child: const Text('Remove'),
+            child: Text(l10n.remove),
           ),
         ],
       ),
@@ -714,7 +718,8 @@ class SplitDetailScreen extends StatelessWidget {
 // ─── Calculating Animation Overlay ─────────────────────────────
 class _CalculatingOverlay extends StatefulWidget {
   final VoidCallback onDone;
-  const _CalculatingOverlay({required this.onDone});
+  final AppLocalizations l10n;
+  const _CalculatingOverlay({required this.onDone, required this.l10n});
 
   @override
   State<_CalculatingOverlay> createState() => _CalculatingOverlayState();
@@ -726,16 +731,18 @@ class _CalculatingOverlayState extends State<_CalculatingOverlay>
   late AnimationController _progressController;
   int _stage = 0;
 
-  final _stages = [
-    {'icon': Icons.receipt_long, 'text': 'Analyzing expenses...'},
-    {'icon': Icons.calculate, 'text': 'Calculating balances...'},
-    {'icon': Icons.swap_horiz, 'text': 'Optimizing transfers...'},
-    {'icon': Icons.check_circle, 'text': 'Done!'},
-  ];
+  late final List<Map<String, dynamic>> _stages;
 
   @override
   void initState() {
     super.initState();
+    _stages = [
+      {'icon': Icons.receipt_long, 'text': widget.l10n.analyzingExpenses},
+      {'icon': Icons.calculate, 'text': widget.l10n.calculatingBalances},
+      {'icon': Icons.swap_horiz, 'text': widget.l10n.optimizingTransfers},
+      {'icon': Icons.check_circle, 'text': widget.l10n.done},
+    ];
+
     _spinController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),

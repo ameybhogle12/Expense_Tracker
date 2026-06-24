@@ -20,7 +20,10 @@ import 'providers/theme_provider.dart';
 import 'providers/split_provider.dart';
 import 'providers/tour_provider.dart';
 import 'providers/currency_provider.dart';
+import 'providers/locale_provider.dart';
 import 'screens/auth_wrapper.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 @pragma('vm:entry-point') // Mandatory for Workmanager
 void callbackDispatcher() {
@@ -106,6 +109,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => ThemeProvider()..loadTheme()),
         ChangeNotifierProvider(create: (_) => SplitProvider()..loadData()),
         ChangeNotifierProvider(create: (_) => TourProvider()),
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
       ],
       child: const MyApp(),
     ),
@@ -117,12 +121,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, child) {
+    return Consumer2<ThemeProvider, LocaleProvider>(
+      builder: (context, themeProvider, localeProvider, child) {
         return MaterialApp(
           title: 'Trip & Track',
           debugShowCheckedModeBanner: false,
           themeMode: themeProvider.themeMode,
+          locale: localeProvider.locale,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           theme: ThemeData(
             colorScheme: ColorScheme.fromSeed(
               seedColor: Colors.deepPurple,

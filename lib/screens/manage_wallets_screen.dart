@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../models/wallet_model.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class ManageWalletsScreen extends StatefulWidget {
   const ManageWalletsScreen({super.key});
@@ -19,15 +19,16 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
     final balanceController = TextEditingController();
     final formKey = GlobalKey<FormState>();
     final currencyProvider = context.read<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.account_balance_wallet, color: Colors.deepPurple),
-            SizedBox(width: 12),
-            Text('Create Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Icon(Icons.account_balance_wallet, color: Colors.deepPurple),
+            const SizedBox(width: 12),
+            Text(l10n.createWallet, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         content: Form(
@@ -37,19 +38,19 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
             children: [
               TextFormField(
                 controller: nameController,
-                decoration: const InputDecoration(
-                  labelText: 'Wallet Name',
-                  hintText: 'e.g. HDFC Credit Card',
-                  border: OutlineInputBorder(),
+                decoration: InputDecoration(
+                  labelText: l10n.walletName,
+                  hintText: l10n.walletNameHint,
+                  border: const OutlineInputBorder(),
                 ),
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a wallet name';
+                    return l10n.pleaseEnterWalletName;
                   }
                   final provider = context.read<ExpenseProvider>();
                   if (provider.wallets.any((w) => w.name.toLowerCase() == value.trim().toLowerCase())) {
-                    return 'Wallet name already exists';
+                    return l10n.walletNameExists;
                   }
                   return null;
                 },
@@ -60,7 +61,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
                 controller: balanceController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: InputDecoration(
-                  labelText: 'Starting Balance (Optional)',
+                  labelText: l10n.startingBalanceOptional,
                   prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
                   hintText: '0',
                   border: const OutlineInputBorder(),
@@ -69,7 +70,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
                   if (value != null && value.trim().isNotEmpty) {
                     final amount = double.tryParse(value);
                     if (amount == null || amount < 0) {
-                      return 'Please enter a valid starting balance';
+                      return l10n.pleaseEnterValidBalance;
                     }
                   }
                   return null;
@@ -81,7 +82,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
@@ -101,13 +102,13 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
 
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Wallet "$name" created successfully.'),
+                    content: Text(l10n.walletCreated(name)),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: const Text('Create'),
+            child: Text(l10n.create),
           ),
         ],
       ),
@@ -116,66 +117,113 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
 
   void _showEditWalletDialog(BuildContext context, WalletModel wallet) {
     final nameController = TextEditingController(text: wallet.name);
+    final provider = context.read<ExpenseProvider>();
+    final currentBalance = provider.getWalletBalance(wallet.name);
+    final balanceController = TextEditingController(
+      text: currentBalance.toStringAsFixed(
+          currentBalance == currentBalance.roundToDouble() ? 0 : 2),
+    );
     final formKey = GlobalKey<FormState>();
+    final l10n = AppLocalizations.of(context)!;
+    final currencyProvider = context.read<CurrencyProvider>();
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.edit, color: Colors.deepPurple),
-            SizedBox(width: 12),
-            Text('Rename Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
+            const Icon(Icons.edit, color: Colors.deepPurple),
+            const SizedBox(width: 12),
+            Text(l10n.editWallet, style: const TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         content: Form(
           key: formKey,
-          child: TextFormField(
-            controller: nameController,
-            decoration: const InputDecoration(
-              labelText: 'Wallet Name',
-              border: OutlineInputBorder(),
-            ),
-            textCapitalization: TextCapitalization.words,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) {
-                return 'Please enter a wallet name';
-              }
-              if (value.trim().toLowerCase() == wallet.name.toLowerCase()) {
-                return null;
-              }
-              final provider = context.read<ExpenseProvider>();
-              if (provider.wallets.any((w) => w.name.toLowerCase() == value.trim().toLowerCase())) {
-                return 'Wallet name already exists';
-              }
-              return null;
-            },
-            autofocus: true,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: l10n.walletName,
+                  border: const OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return l10n.pleaseEnterWalletName;
+                  }
+                  if (value.trim().toLowerCase() == wallet.name.toLowerCase()) {
+                    return null;
+                  }
+                  final p = context.read<ExpenseProvider>();
+                  if (p.wallets.any((w) => w.name.toLowerCase() == value.trim().toLowerCase())) {
+                    return l10n.walletNameExists;
+                  }
+                  return null;
+                },
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: balanceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: l10n.adjustBalance,
+                  prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
+                  helperText: l10n.adjustBalanceHint,
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value != null && value.trim().isNotEmpty) {
+                    final amount = double.tryParse(value);
+                    if (amount == null) {
+                      return l10n.pleaseEnterValidBalance;
+                    }
+                  }
+                  return null;
+                },
+              ),
+            ],
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
                 final oldName = wallet.name;
                 final newName = nameController.text.trim();
+
+                // Handle rename
                 if (oldName != newName) {
                   context.read<ExpenseProvider>().updateWallet(wallet, newName);
                 }
+
+                // Handle balance adjustment
+                final balanceStr = balanceController.text.trim();
+                if (balanceStr.isNotEmpty) {
+                  final newBalance = double.tryParse(balanceStr);
+                  if (newBalance != null && newBalance != currentBalance) {
+                    // Use the new name if it was renamed
+                    final walletName = oldName != newName ? newName : oldName;
+                    context.read<ExpenseProvider>().adjustWalletBalance(walletName, newBalance);
+                  }
+                }
+
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Wallet renamed to "$newName".'),
+                    content: Text(l10n.walletRenamed(newName)),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -184,16 +232,18 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
 
   void _confirmDeleteWallet(BuildContext context, WalletModel wallet) {
     final provider = context.read<ExpenseProvider>();
+    final l10n = AppLocalizations.of(context)!;
+
     if (provider.wallets.length <= 1) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Cannot Delete'),
-          content: const Text('You must keep at least one active wallet in the app.'),
+          title: Text(l10n.cannotDelete),
+          content: Text(l10n.mustKeepOneWallet),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
+              child: Text(l10n.ok),
             ),
           ],
         ),
@@ -201,17 +251,46 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
       return;
     }
 
+    final txCount = provider.getWalletTransactionCount(wallet.name);
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirm Delete'),
-        content: Text(
-          'Are you sure you want to delete "${wallet.name}"?\n\nNote: Transactions previously linked to this wallet will remain in history, but they won\'t affect any active wallet balances.',
+        title: Text(l10n.confirmDelete),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.confirmDeleteWalletMsg(wallet.name)),
+            if (txCount > 0) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        l10n.deleteWalletWarning(txCount.toString()),
+                        style: const TextStyle(fontSize: 12, color: Colors.red),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           TextButton(
             onPressed: () {
@@ -219,12 +298,12 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Wallet "${wallet.name}" deleted.'),
+                  content: Text(l10n.walletDeleted(wallet.name)),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -233,9 +312,10 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Wallets', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.manageWallets, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
@@ -273,9 +353,9 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Total Net Worth',
-                          style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
+                        Text(
+                          l10n.totalNetWorth,
+                          style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -350,7 +430,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      isNegative ? 'Balance Overdrawn' : 'Available Balance',
+                                      isNegative ? l10n.balanceOverdrawn : l10n.availableBalance,
                                       style: TextStyle(
                                         fontSize: 12,
                                         color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
@@ -405,7 +485,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddWalletDialog(context),
         icon: const Icon(Icons.add),
-        label: const Text('Add Wallet'),
+        label: Text(l10n.addWallet),
       ),
     );
   }

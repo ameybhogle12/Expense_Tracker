@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../models/budget_model.dart';
 import '../models/category_model.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class ManageBudgetsScreen extends StatefulWidget {
   const ManageBudgetsScreen({super.key});
@@ -21,6 +21,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
     );
     final formKey = GlobalKey<FormState>();
     final currencyProvider = context.read<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     showDialog(
       context: context,
@@ -39,7 +40,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Set Budget: ${category.name}',
+                l10n.setBudgetFor(category.name),
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
@@ -50,27 +51,27 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Enter the monthly budget limit for this category. The app will track your spending against this limit.',
-                style: TextStyle(fontSize: 13, color: Colors.grey),
+              Text(
+                l10n.enterMonthlyBudgetLimit,
+                style: const TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(decimal: false),
                 decoration: InputDecoration(
-                  labelText: 'Budget Limit',
+                  labelText: l10n.budgetLimitTitle,
                   prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
                   border: const OutlineInputBorder(),
-                  hintText: 'e.g. 1000',
+                  hintText: l10n.budgetLimitHint,
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter an amount';
+                    return l10n.pleaseEnterAmount;
                   }
                   final amount = double.tryParse(value);
                   if (amount == null || amount <= 0) {
-                    return 'Please enter a valid positive number';
+                    return l10n.pleaseEnterValidNumber;
                   }
                   return null;
                 },
@@ -82,7 +83,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           if (currentBudget != null)
             TextButton(
@@ -92,12 +93,12 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Budget for ${category.name} cleared.'),
+                    content: Text(l10n.budgetCleared(category.name)),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               },
-              child: const Text('Clear Budget', style: TextStyle(color: Colors.red)),
+              child: Text(l10n.clearBudget, style: const TextStyle(color: Colors.red)),
             ),
           ElevatedButton(
             onPressed: () {
@@ -110,13 +111,13 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Budget for ${category.name} set to ${currencyProvider.format(amount)}.'),
+                    content: Text(l10n.budgetSet(category.name, currencyProvider.format(amount))),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(l10n.save),
           ),
         ],
       ),
@@ -125,9 +126,10 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Manage Budgets', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.manageBudgets, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
@@ -135,7 +137,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
           final currencyProvider = context.watch<CurrencyProvider>();
 
           if (categories.isEmpty) {
-            return const Center(child: Text('No categories found.'));
+            return Center(child: Text(l10n.noCategoriesFound));
           }
 
           final customBudgetsCount = provider.budgets.length;
@@ -170,7 +172,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Customized Budgets: $customBudgetsCount',
+                            l10n.customizedBudgetsCount(customBudgetsCount.toString()),
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -179,7 +181,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Tap any category to set or edit its custom monthly budget limit.',
+                            l10n.tapCategoryToSetBudget,
                             style: TextStyle(
                               fontSize: 12,
                               color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
@@ -232,8 +234,8 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
                             isCustomized
-                                ? 'Monthly Limit: ${currencyProvider.format(customBudget)}'
-                                : 'Using default limit (${currencyProvider.format(500)})',
+                                ? '${l10n.monthlyBudgetLimit}: ${currencyProvider.format(customBudget)}'
+                                : l10n.usingDefaultLimit(currencyProvider.format(500)),
                             style: TextStyle(
                               color: isCustomized
                                   ? Theme.of(context).colorScheme.primary
@@ -248,12 +250,12 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                             if (isCustomized)
                               IconButton(
                                 icon: const Icon(Icons.clear, color: Colors.grey),
-                                tooltip: 'Clear Budget',
+                                tooltip: l10n.clearBudget,
                                 onPressed: () {
                                   provider.deleteBudget(category.name);
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(
-                                      content: Text('Budget for ${category.name} cleared.'),
+                                      content: Text(l10n.budgetCleared(category.name)),
                                       behavior: SnackBarBehavior.floating,
                                     ),
                                   );

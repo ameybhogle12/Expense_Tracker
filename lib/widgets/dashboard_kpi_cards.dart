@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class DashboardKpiCards extends StatelessWidget {
   final double income;
@@ -29,12 +30,13 @@ class DashboardKpiCards extends StatelessWidget {
         : (expense > 0 ? 100.0 : 0.0);
 
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Row(
       children: [
         Expanded(
           child: _KpiCard(
-            title: 'Income',
+            title: l10n.income,
             value: currencyProvider.format(income),
             changePercent: incomeChange,
             icon: Icons.trending_up_rounded,
@@ -47,7 +49,7 @@ class DashboardKpiCards extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _KpiCard(
-            title: 'Expenses',
+            title: l10n.expenses,
             value: currencyProvider.format(expense),
             changePercent: expenseChange,
             invertChange: true,
@@ -61,11 +63,11 @@ class DashboardKpiCards extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
           child: _KpiCard(
-            title: 'Savings',
+            title: l10n.savings,
             value: currencyProvider.format(savings.abs()),
             subtitle: savings >= 0
-                ? '${savingsRate.toStringAsFixed(1)}% saved'
-                : 'Overspent',
+                ? l10n.percentSaved(savingsRate.toStringAsFixed(1))
+                : l10n.overspent,
             icon: savings >= 0
                 ? Icons.savings_rounded
                 : Icons.warning_amber_rounded,

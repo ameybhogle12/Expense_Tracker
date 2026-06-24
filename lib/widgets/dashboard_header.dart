@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../screens/manage_wallets_screen.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class DashboardHeader extends StatefulWidget {
   const DashboardHeader({super.key});
@@ -43,6 +43,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
     final provider = context.watch<ExpenseProvider>();
     final totalSpending = provider.totalMonthlySpending;
     final wallets = provider.wallets;
+    final l10n = AppLocalizations.of(context)!;
 
     final currencyProvider = context.watch<CurrencyProvider>();
     final onContainer = Theme.of(context).colorScheme.onPrimaryContainer;
@@ -70,7 +71,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
               Row(
                 children: [
                   Text(
-                    'My Wallets',
+                    l10n.myWallets,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,
                           color: onContainer,
@@ -84,7 +85,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
               ),
               IconButton(
                 icon: const Icon(Icons.edit_note, size: 20),
-                tooltip: 'Manage Wallets',
+                tooltip: l10n.manageWallets,
                 color: onContainer,
                 onPressed: () {
                   Navigator.push(
@@ -100,7 +101,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
           SizedBox(
             height: 95,
             child: wallets.isEmpty
-                ? const Center(child: Text('No wallets configured'))
+                ? Center(child: Text(l10n.noWalletsConfigured))
                 : ListView.builder(
                     controller: _scrollController,
                     scrollDirection: Axis.horizontal,
@@ -198,7 +199,7 @@ class _DashboardHeaderState extends State<DashboardHeader> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Total Spent This Month',
+                l10n.totalSpentThisMonth,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: onContainer.withOpacity(0.8),
                     ),

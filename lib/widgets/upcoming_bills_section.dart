@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class UpcomingBillsSection extends StatelessWidget {
   const UpcomingBillsSection({super.key});
@@ -12,6 +13,7 @@ class UpcomingBillsSection extends StatelessWidget {
     final bills = provider.getUpcomingBills();
     final theme = Theme.of(context);
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     final totalCommitted =
         bills.fold(0.0, (sum, b) => sum + (b['amount'] as double));
@@ -22,7 +24,7 @@ class UpcomingBillsSection extends StatelessWidget {
         Row(
           children: [
             Text(
-              'Upcoming Bills',
+              l10n.upcomingBills,
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
@@ -36,7 +38,7 @@ class UpcomingBillsSection extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${bills.length} pending',
+                  l10n.pendingBills(bills.length.toString()),
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -55,11 +57,11 @@ class UpcomingBillsSection extends StatelessWidget {
               side: BorderSide(
                   color: theme.dividerColor.withOpacity(0.1)),
             ),
-            child: const Padding(
-              padding: EdgeInsets.all(20),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
               child: Center(
                 child: Text(
-                  'No upcoming bills for the rest of this month. 🎉',
+                  l10n.noUpcomingBills,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -128,7 +130,7 @@ class UpcomingBillsSection extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                isEmi ? 'EMI' : 'Sub',
+                                isEmi ? l10n.emi : l10n.sub,
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -144,10 +146,10 @@ class UpcomingBillsSection extends StatelessWidget {
                             const SizedBox(width: 3),
                             Text(
                               daysUntil == 0
-                                  ? 'Due today'
+                                  ? l10n.dueToday
                                   : daysUntil == 1
-                                      ? 'Due tomorrow'
-                                      : 'Due on ${_ordinal(dueDay)}',
+                                      ? l10n.dueTomorrow
+                                      : l10n.dueOn(_ordinal(dueDay)),
                               style: TextStyle(
                                 fontSize: 11,
                                 color: urgencyColor,
@@ -189,7 +191,7 @@ class UpcomingBillsSection extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total Committed',
+                  l10n.totalCommitted,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w600,
                     color: theme.colorScheme.onSurface.withOpacity(0.7),

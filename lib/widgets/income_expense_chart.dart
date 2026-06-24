@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../providers/currency_provider.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class IncomeExpenseChart extends StatelessWidget {
   final List<Map<String, dynamic>> trendData;
@@ -11,10 +12,11 @@ class IncomeExpenseChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     if (trendData.isEmpty) {
-      return const SizedBox(
+      return SizedBox(
         height: 200,
-        child: Center(child: Text('Not enough data for trend chart.')),
+        child: Center(child: Text(l10n.notEnoughDataForChart)),
       );
     }
 
@@ -43,14 +45,14 @@ class IncomeExpenseChart extends StatelessWidget {
         Row(
           children: [
             Text(
-              'Income vs Expenses',
+              l10n.incomeVsExpenses,
               style: theme.textTheme.titleMedium
                   ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const Spacer(),
-            _LegendDot(color: const Color(0xFF00C853), label: 'Income'),
+            _LegendDot(color: const Color(0xFF00C853), label: l10n.income),
             const SizedBox(width: 12),
-            _LegendDot(color: const Color(0xFFFF1744), label: 'Expenses'),
+            _LegendDot(color: const Color(0xFFFF1744), label: l10n.expenses),
           ],
         ),
         const SizedBox(height: 20),

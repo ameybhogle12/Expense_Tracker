@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../models/subscription_model.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class SubscriptionsScreen extends StatelessWidget {
   const SubscriptionsScreen({super.key});
@@ -18,6 +18,7 @@ class SubscriptionsScreen extends StatelessWidget {
   }
 
   void _showActions(BuildContext context, SubscriptionModel sub) {
+    final l10n = AppLocalizations.of(context)!;
     showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
@@ -26,7 +27,7 @@ class SubscriptionsScreen extends StatelessWidget {
           children: [
             ListTile(
               leading: const Icon(Icons.edit),
-              title: const Text('Edit'),
+              title: Text(l10n.edit),
               onTap: () {
                 Navigator.pop(ctx);
                 _showSubscriptionForm(context, existing: sub);
@@ -34,7 +35,7 @@ class SubscriptionsScreen extends StatelessWidget {
             ),
             ListTile(
               leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text('Delete', style: TextStyle(color: Colors.red)),
+              title: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(ctx);
                 context.read<ExpenseProvider>().deleteSubscription(sub);
@@ -47,17 +48,18 @@ class SubscriptionsScreen extends StatelessWidget {
   }
 
   Future<bool?> _confirmDelete(BuildContext context, String name) {
+    final l10n = AppLocalizations.of(context)!;
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete subscription?'),
-        content: Text('"$name" will be removed. This won\'t delete transactions already logged.'),
+        title: Text(l10n.deleteSubscriptionTitle),
+        content: Text(l10n.deleteSubscriptionWarning(name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Delete'),
+            child: Text(l10n.delete),
           ),
         ],
       ),
@@ -68,13 +70,14 @@ class SubscriptionsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final subscriptions = context.watch<ExpenseProvider>().subscriptions;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recurring Subscriptions', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(l10n.recurringSubscriptions, style: const TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: subscriptions.isEmpty
-          ? const Center(child: Text('No active subscriptions.'))
+          ? Center(child: Text(l10n.noActiveSubscriptions))
           : ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               itemCount: subscriptions.length,
@@ -106,7 +109,7 @@ class SubscriptionsScreen extends StatelessWidget {
                         child: Icon(catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.subscriptions, color: color),
                       ),
                       title: Text(sub.note.isNotEmpty ? sub.note : sub.category, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text('Billed on day ${sub.paymentDay} • ${sub.paymentMethod}'),
+                      subtitle: Text(l10n.billedOnDay(sub.paymentDay, sub.paymentMethod)),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -123,7 +126,7 @@ class SubscriptionsScreen extends StatelessWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showSubscriptionForm(context),
         icon: const Icon(Icons.add),
-        label: const Text('New Subscription'),
+        label: Text(l10n.newSubscription),
       ),
     );
   }
@@ -180,11 +183,12 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
 
   void _submitData() async {
     try {
+      final l10n = AppLocalizations.of(context)!;
       final provider = context.read<ExpenseProvider>();
       final enteredAmount = double.tryParse(_amountController.text.trim().replaceAll(',', ''));
       if (enteredAmount == null || enteredAmount <= 0) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a valid amount.')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.enterValidAmount)));
         }
         return;
       }
@@ -200,15 +204,15 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
         paymentDay: _paymentDay,
         excludeId: widget.existing?.id,
       )) {
-        final label = note.isNotEmpty ? '"$note"' : 'this recurring charge';
+        final label = note.isNotEmpty ? l10n.formattedNote(note) : l10n.thisRecurringCharge;
         final proceed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('Possible duplicate'),
-            content: Text('You already have a subscription that matches $label. Add it anyway?'),
+            title: Text(l10n.possibleDuplicateTitle),
+            content: Text(l10n.possibleDuplicateWarning(label)),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add Anyway')),
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l10n.cancel)),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(l10n.addAnyway)),
             ],
           ),
         );
@@ -246,7 +250,8 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red));
+        final l10n = AppLocalizations.of(context)!;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.errorMessage(e.toString())), backgroundColor: Colors.red));
       }
     }
   }
@@ -255,6 +260,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     return SingleChildScrollView(
       child: Padding(
@@ -262,24 +268,24 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(_isEditing ? 'Edit Subscription' : 'Add Subscription', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(_isEditing ? l10n.editSubscriptionTitle : l10n.addSubscriptionTitle, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: InputDecoration(labelText: 'Amount', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l10n.amount, prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _paymentMethod,
-              decoration: const InputDecoration(labelText: 'Pay From', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l10n.payFrom, border: const OutlineInputBorder()),
               items: context.watch<ExpenseProvider>().wallets.map((w) => DropdownMenuItem(value: w.name, child: Text(w.name))).toList(),
               onChanged: (val) => setState(() => _paymentMethod = val!),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               value: _selectedCategory ?? context.watch<ExpenseProvider>().categories.first.name,
-              decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16)),
+              decoration: InputDecoration(labelText: l10n.category, border: const OutlineInputBorder(), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16)),
               items: context.watch<ExpenseProvider>().categories.map((c) => DropdownMenuItem(value: c.name, child: Text(c.name, style: const TextStyle(fontSize: 13), overflow: TextOverflow.ellipsis))).toList(),
               onChanged: (val) => setState(() => _selectedCategory = val!),
             ),
@@ -289,7 +295,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
                 Expanded(
                   child: DropdownButtonFormField<int>(
                     value: _paymentDay,
-                    decoration: const InputDecoration(labelText: 'Day of Month', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16)),
+                    decoration: InputDecoration(labelText: l10n.dayOfMonth, border: const OutlineInputBorder(), contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16)),
                     items: List.generate(31, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1}'))),
                     onChanged: (val) => setState(() => _paymentDay = val!),
                   ),
@@ -311,13 +317,13 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
             const SizedBox(height: 16),
             TextField(
               controller: _noteController,
-              decoration: const InputDecoration(labelText: 'Subscription Name (e.g. Netflix)', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: l10n.subscriptionNameHint, border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 24),
             FilledButton(
               onPressed: _submitData,
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-              child: Text(_isEditing ? 'Update Subscription' : 'Save Subscription', style: const TextStyle(fontSize: 16)),
+              child: Text(_isEditing ? l10n.updateSubscription : l10n.saveSubscription, style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),

@@ -5,6 +5,7 @@ import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../screens/all_transactions_screen.dart';
 import 'transaction_actions.dart';
+import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class RecentTransactions extends StatelessWidget {
   const RecentTransactions({super.key});
@@ -14,6 +15,7 @@ class RecentTransactions extends StatelessWidget {
     final provider = context.watch<ExpenseProvider>();
     final transactions = provider.allTransactions.take(5).toList();
     final currencyProvider = context.watch<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     if (transactions.isEmpty) {
@@ -27,7 +29,7 @@ class RecentTransactions extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Recent Transactions',
+              l10n.recentTransactions,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             TextButton(
@@ -37,7 +39,7 @@ class RecentTransactions extends StatelessWidget {
                   MaterialPageRoute(builder: (context) => const AllTransactionsScreen()),
                 );
               },
-              child: const Text('See All'),
+              child: Text(l10n.seeAll),
             ),
           ],
         ),
@@ -49,7 +51,7 @@ class RecentTransactions extends StatelessWidget {
             final t = transactions[index];
             final catObj = provider.getCategoryByName(t.category);
             final color = t.isIncome ? Colors.green : (catObj != null ? Color(catObj.colorValue) : Colors.grey);
-            final title = t.note.isNotEmpty ? t.note : (t.isIncome ? 'Added Funds' : t.category);
+            final title = t.note.isNotEmpty ? t.note : (t.isIncome ? l10n.addedFunds : t.category);
             final icon = t.isIncome ? Icons.account_balance_wallet : (catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.attach_money);
             
             // Staggered premium slide-and-fade animation
