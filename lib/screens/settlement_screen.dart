@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/split_provider.dart';
+import '../providers/currency_provider.dart';
 
 class SettlementScreen extends StatefulWidget {
   final String tripId;
@@ -33,7 +34,21 @@ class _SettlementScreenState extends State<SettlementScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
+
+    final provider = context.read<SplitProvider>();
+
+    // Settlement results are computed instantly; the loader is purely a
+    // first-impression flourish. Only play it the first time a trip's
+    // settlement is opened this session — reopening should be instant.
+    if (!provider.shouldAnimateSettlement(widget.tripId)) {
+      _isCalculating = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _staggerController.forward();
+      });
+      return;
+    }
+    provider.markSettlementAnimationSeen(widget.tripId);
+
     // Cycle through loader steps for 3.5 seconds before revealing results
     _calcTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
       if (mounted) {
@@ -136,6 +151,7 @@ class _SettlementScreenState extends State<SettlementScreen>
     final settlements = provider.getSettlements(widget.tripId);
     final balances = provider.getBalances(widget.tripId);
     final colorScheme = Theme.of(context).colorScheme;
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     // Count how many are already paid
     final paidCount = settlements
@@ -331,7 +347,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                                             BorderRadius.circular(20),
                                       ),
                                       child: Text(
-                                        '₹${s.amount.toStringAsFixed(0)}',
+                                        currencyProvider.format(s.amount),
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
                                           color: isPaid
@@ -492,7 +508,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                       statusColor = Colors.green;
                       statusIcon = Icons.check_circle;
                     } else {
-                      status = 'Gets back ₹${balance.toStringAsFixed(0)}';
+                      status = 'Gets back ${currencyProvider.format(balance)}';
                       statusColor = Colors.green;
                       statusIcon = Icons.arrow_downward;
                     }
@@ -507,7 +523,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                       statusColor = Colors.green;
                       statusIcon = Icons.check_circle;
                     } else {
-                      status = 'Owes ₹${balance.abs().toStringAsFixed(0)}';
+                      status = 'Owes ${currencyProvider.format(balance.abs())}';
                       statusColor = colorScheme.error;
                       statusIcon = Icons.arrow_upward;
                     }
@@ -601,6 +617,7 @@ class _SettlementScreenState extends State<SettlementScreen>
     Settlement s,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
+    final currencyProvider = context.read<CurrencyProvider>();
 
     showDialog(
       context: context,
@@ -617,7 +634,7 @@ class _SettlementScreenState extends State<SettlementScreen>
               ),
               const TextSpan(text: ' has paid '),
               TextSpan(
-                text: '₹${s.amount.toStringAsFixed(0)}',
+                text: currencyProvider.format(s.amount),
                 style: TextStyle(
                     fontWeight: FontWeight.bold, color: colorScheme.primary),
               ),

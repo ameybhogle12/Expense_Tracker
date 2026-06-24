@@ -1,0 +1,3 @@
+id,itemName,totalAmount,monthlyInstallment,totalMonths,monthsPaid,paymentDay,paymentMethod
+emi_1,iPhone 15,72000.0,6000.0,12,6,10,Main Bank
+emi_2,MacBook Air,96000.0,8000.0,12,3,15,Main Bank

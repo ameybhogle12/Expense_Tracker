@@ -2,10 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../screens/manage_wallets_screen.dart';
 
-class DashboardHeader extends StatelessWidget {
+class DashboardHeader extends StatefulWidget {
   const DashboardHeader({super.key});
+
+  @override
+  State<DashboardHeader> createState() => _DashboardHeaderState();
+}
+
+class _DashboardHeaderState extends State<DashboardHeader> {
+  static const double _cardExtent = 145 + 12; // card width + right margin
+  final ScrollController _scrollController = ScrollController();
+  int _activeIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final index = (_scrollController.offset / _cardExtent).round();
+    if (index != _activeIndex) {
+      setState(() => _activeIndex = index);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +44,9 @@ class DashboardHeader extends StatelessWidget {
     final totalSpending = provider.totalMonthlySpending;
     final wallets = provider.wallets;
 
-    final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final currencyProvider = context.watch<CurrencyProvider>();
+    final onContainer = Theme.of(context).colorScheme.onPrimaryContainer;
+    final activeIndex = _activeIndex.clamp(0, wallets.isEmpty ? 0 : wallets.length - 1);
 
     return Container(
       padding: const EdgeInsets.all(20.0),
@@ -34,17 +67,25 @@ class DashboardHeader extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'My Wallets',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
+              Row(
+                children: [
+                  Text(
+                    'My Wallets',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: onContainer,
+                        ),
+                  ),
+                  if (wallets.length > 1) ...[
+                    const SizedBox(width: 6),
+                    Icon(Icons.swipe, size: 16, color: onContainer.withOpacity(0.7)),
+                  ],
+                ],
               ),
               IconButton(
                 icon: const Icon(Icons.edit_note, size: 20),
                 tooltip: 'Manage Wallets',
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                color: onContainer,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -61,12 +102,13 @@ class DashboardHeader extends StatelessWidget {
             child: wallets.isEmpty
                 ? const Center(child: Text('No wallets configured'))
                 : ListView.builder(
+                    controller: _scrollController,
                     scrollDirection: Axis.horizontal,
                     itemCount: wallets.length,
                     itemBuilder: (context, index) {
                       final wallet = wallets[index];
                       final balance = provider.getWalletBalance(wallet.name);
-                      
+
                       // Curated visual gradients for premium card looks
                       final List<List<Color>> gradients = [
                         [Colors.indigo.shade600, Colors.blue.shade500],
@@ -113,7 +155,7 @@ class DashboardHeader extends StatelessWidget {
                             FittedBox(
                               fit: BoxFit.scaleDown,
                               child: Text(
-                                currencyFormat.format(balance),
+                                currencyProvider.format(balance),
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 18,
@@ -127,7 +169,29 @@ class DashboardHeader extends StatelessWidget {
                     },
                   ),
           ),
-          const SizedBox(height: 20),
+          // Page-dot indicator so users know more wallets exist beyond the edge.
+          if (wallets.length > 1) ...[
+            const SizedBox(height: 10),
+            Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(wallets.length, (i) {
+                  final isActive = i == activeIndex;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 250),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: isActive ? 18 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: onContainer.withOpacity(isActive ? 0.9 : 0.3),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+          const SizedBox(height: 16),
           const Divider(height: 1, color: Colors.white24),
           const SizedBox(height: 16),
           Row(
@@ -136,14 +200,14 @@ class DashboardHeader extends StatelessWidget {
               Text(
                 'Total Spent This Month',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onPrimaryContainer.withOpacity(0.8),
+                      color: onContainer.withOpacity(0.8),
                     ),
               ),
               Text(
-                currencyFormat.format(totalSpending),
+                currencyProvider.format(totalSpending),
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      color: onContainer,
                     ),
               ),
             ],

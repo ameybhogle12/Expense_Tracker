@@ -34,12 +34,6 @@ class TourProvider with ChangeNotifier {
       spotlightLabel: 'My Wallets',
     ),
     TourStep(
-      keyId: 'budgets',
-      title: 'Category Budgets',
-      description: 'Track monthly limits for Food, Travel, and more. Tap any budget card to edit it on-the-fly. Turns Orange at 80% and Red at 100%!',
-      spotlightLabel: 'Budgets Overview',
-    ),
-    TourStep(
       keyId: 'add_btn',
       title: 'Log Transactions',
       description: 'Tap this button to record Expenses, Income, or swap/transfer funds from one wallet to another.',

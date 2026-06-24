@@ -3,11 +3,14 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/expense_model.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 
 enum TransactionType { expense, income, transfer }
 
 class AddExpenseForm extends StatefulWidget {
-  const AddExpenseForm({super.key});
+  /// When provided, the form opens in edit mode for this transaction.
+  final ExpenseModel? existing;
+  const AddExpenseForm({super.key, this.existing});
 
   @override
   State<AddExpenseForm> createState() => _AddExpenseFormState();
@@ -19,9 +22,11 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategory;
   TransactionType _transactionType = TransactionType.expense;
-  
-  late String _paymentMethod; 
-  late String _transferToWallet; 
+
+  late String _paymentMethod;
+  late String _transferToWallet;
+
+  bool get _isEditing => widget.existing != null;
 
   @override
   void initState() {
@@ -38,6 +43,21 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     } else {
       _paymentMethod = 'Main Bank';
       _transferToWallet = 'Cash';
+    }
+
+    // Prefill from the existing transaction when editing.
+    final existing = widget.existing;
+    if (existing != null) {
+      _transactionType =
+          existing.isIncome ? TransactionType.income : TransactionType.expense;
+      _amountController.text = existing.amount.toStringAsFixed(
+          existing.amount == existing.amount.roundToDouble() ? 0 : 2);
+      _noteController.text = existing.note;
+      _selectedDate = existing.date;
+      _paymentMethod = existing.paymentMethod;
+      if (!existing.isIncome) {
+        _selectedCategory = existing.category;
+      }
     }
   }
 
@@ -66,6 +86,24 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
             const SnackBar(content: Text('Please enter a valid amount. (e.g. 2000)')),
           );
         }
+        return;
+      }
+
+      // Edit mode: update the existing transaction in place (expense/income only).
+      if (_isEditing) {
+        final existing = widget.existing!;
+        await context.read<ExpenseProvider>().updateExpense(
+              existing,
+              amount: enteredAmount,
+              category: existing.isIncome
+                  ? existing.category
+                  : (_selectedCategory ??
+                      context.read<ExpenseProvider>().categories.first.name),
+              paymentMethod: _paymentMethod,
+              date: _selectedDate,
+              note: _noteController.text.trim(),
+            );
+        if (mounted) Navigator.pop(context);
         return;
       }
 
@@ -138,6 +176,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
     final wallets = context.watch<ExpenseProvider>().wallets.map((w) => w.name).toList();
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     // Resilient fallback logic
     if (wallets.isNotEmpty) {
@@ -156,34 +195,39 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              _transactionType == TransactionType.income ? 'Add Funds to Wallet' 
-                : _transactionType == TransactionType.transfer ? 'Transfer Funds' 
+              _isEditing
+                ? (_transactionType == TransactionType.income ? 'Edit Income' : 'Edit Expense')
+                : _transactionType == TransactionType.income ? 'Add Funds to Wallet'
+                : _transactionType == TransactionType.transfer ? 'Transfer Funds'
                 : 'Add New Expense',
               style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            SegmentedButton<TransactionType>(
-              style: SegmentedButton.styleFrom(
-                textStyle: const TextStyle(fontSize: 12),
+            // Type can't be switched while editing an existing transaction.
+            if (!_isEditing) ...[
+              SegmentedButton<TransactionType>(
+                style: SegmentedButton.styleFrom(
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+                segments: const [
+                  ButtonSegment(value: TransactionType.expense, label: Text('Expense'), icon: Icon(Icons.money_off, size: 16)),
+                  ButtonSegment(value: TransactionType.income, label: Text('Income'), icon: Icon(Icons.attach_money, size: 16)),
+                  ButtonSegment(value: TransactionType.transfer, label: Text('Transfer'), icon: Icon(Icons.swap_horiz, size: 16)),
+                ],
+                selected: {_transactionType},
+                onSelectionChanged: (Set<TransactionType> newSelection) {
+                  setState(() => _transactionType = newSelection.first);
+                },
               ),
-              segments: const [
-                ButtonSegment(value: TransactionType.expense, label: Text('Expense'), icon: Icon(Icons.money_off, size: 16)),
-                ButtonSegment(value: TransactionType.income, label: Text('Income'), icon: Icon(Icons.attach_money, size: 16)),
-                ButtonSegment(value: TransactionType.transfer, label: Text('Transfer'), icon: Icon(Icons.swap_horiz, size: 16)),
-              ],
-              selected: {_transactionType},
-              onSelectionChanged: (Set<TransactionType> newSelection) {
-                setState(() => _transactionType = newSelection.first);
-              },
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
+            ],
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixText: '₹ ',
-                border: OutlineInputBorder(),
+                prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
+                border: const OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 16),
@@ -304,7 +348,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: const Text('Save Transaction', style: TextStyle(fontSize: 16)),
+              child: Text(_isEditing ? 'Update Transaction' : 'Save Transaction', style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),

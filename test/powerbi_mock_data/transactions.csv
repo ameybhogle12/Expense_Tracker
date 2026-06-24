@@ -1,0 +1,151 @@
+id,amount,category,date,note,paymentMethod,isIncome
+tx_1,55000.0,Other,2026-04-01 09:00:00,Monthly Salary,Main Bank,true
+tx_2,1500.0,Health,2026-04-01 07:30:00,Gym Membership,Main Bank,false
+tx_3,122.46,Transport,2026-04-01 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_4,12000.0,Bills,2026-04-03 10:00:00,Rent Payment,Main Bank,false
+tx_5,217.68,Transport,2026-04-03 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_6,1643.04,Shopping,2026-04-04 16:00:00,Electronics accessories,Main Bank,false
+tx_7,499.0,Entertainment,2026-04-05 08:00:00,Netflix Subscription,Main Bank,false
+tx_8,124.53,Food,2026-04-05 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_9,82.24,Food,2026-04-06 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_10,166.16,Transport,2026-04-06 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_11,174.4,Food,2026-04-07 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_12,981.16,Health,2026-04-07 15:00:00,Medicines,UPI Lite,false
+tx_13,2130.0,Bills,2026-04-08 18:00:00,Electricity Bill,Main Bank,false
+tx_14,366.77,Food,2026-04-08 13:00:00,Groceries,UPI Lite,false
+tx_15,206.31,Transport,2026-04-08 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_16,911.48,Transport,2026-04-08 11:00:00,Petrol refill,Main Bank,false
+tx_17,425.01,Food,2026-04-09 13:00:00,Groceries,Main Bank,false
+tx_18,6000.0,Bills,2026-04-10 12:00:00,EMI - iPhone 15,Main Bank,false
+tx_19,188.43,Transport,2026-04-10 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_20,174.64,Food,2026-04-11 13:00:00,Groceries,UPI Lite,false
+tx_21,182.17,Food,2026-04-11 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_22,239.5,Food,2026-04-12 13:00:00,Restaurant dine out,UPI Lite,false
+tx_23,260.38,Food,2026-04-13 13:00:00,Groceries,UPI Lite,false
+tx_24,195.9,Transport,2026-04-13 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_25,1212.63,Transport,2026-04-13 11:00:00,Petrol refill,Main Bank,false
+tx_26,1017.53,Transport,2026-04-14 11:00:00,Petrol refill,Main Bank,false
+tx_27,8000.0,Bills,2026-04-15 12:00:00,EMI - MacBook Air,Main Bank,false
+tx_28,199.0,Entertainment,2026-04-15 09:15:00,Spotify Premium,UPI Lite,false
+tx_29,214.49,Transport,2026-04-15 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_30,161.1,Food,2026-04-16 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_31,606.24,Food,2026-04-17 13:00:00,Restaurant dine out,Main Bank,false
+tx_32,122.07,Transport,2026-04-17 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_33,6000.0,Other,2026-04-18 14:30:00,Freelance Web Design,Main Bank,true
+tx_34,388.03,Food,2026-04-18 13:00:00,Restaurant dine out,UPI Lite,false
+tx_35,728.04,Transport,2026-04-19 11:00:00,Petrol refill,Main Bank,false
+tx_36,799.0,Bills,2026-04-20 10:00:00,Wifi & Mobile Bill,UPI Lite,false
+tx_37,63.32,Food,2026-04-20 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_38,177.86,Transport,2026-04-20 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_39,1064.21,Transport,2026-04-20 11:00:00,Petrol refill,Main Bank,false
+tx_40,172.66,Food,2026-04-21 13:00:00,Groceries,UPI Lite,false
+tx_41,176.37,Transport,2026-04-22 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_42,222.66,Transport,2026-04-24 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_43,1123.73,Transport,2026-04-24 11:00:00,Petrol refill,Main Bank,false
+tx_44,263.98,Food,2026-04-25 13:00:00,Restaurant dine out,UPI Lite,false
+tx_45,1405.38,Transport,2026-04-26 11:00:00,Petrol refill,Main Bank,false
+tx_46,85.14,Food,2026-04-27 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_47,122.28,Transport,2026-04-27 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_48,117.2,Transport,2026-04-29 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_49,55000.0,Other,2026-05-01 09:00:00,Monthly Salary,Main Bank,true
+tx_50,1500.0,Health,2026-05-01 07:30:00,Gym Membership,Main Bank,false
+tx_51,216.93,Transport,2026-05-01 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_52,12000.0,Bills,2026-05-03 10:00:00,Rent Payment,Main Bank,false
+tx_53,109.97,Food,2026-05-03 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_54,509.57,Food,2026-05-04 13:00:00,Restaurant dine out,Main Bank,false
+tx_55,118.0,Transport,2026-05-04 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_56,499.0,Entertainment,2026-05-05 08:00:00,Netflix Subscription,Main Bank,false
+tx_57,731.44,Other,2026-05-05 12:00:00,Miscellaneous purchase,UPI Lite,false
+tx_58,82.51,Transport,2026-05-06 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_59,924.65,Health,2026-05-06 15:00:00,Doctor consultation fee,UPI Lite,false
+tx_60,2410.0,Bills,2026-05-08 18:00:00,Electricity Bill,Main Bank,false
+tx_61,104.43,Transport,2026-05-08 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_62,6000.0,Bills,2026-05-10 12:00:00,EMI - iPhone 15,Main Bank,false
+tx_63,83.63,Food,2026-05-10 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_64,509.93,Food,2026-05-11 13:00:00,Restaurant dine out,Main Bank,false
+tx_65,204.05,Transport,2026-05-11 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_66,422.23,Other,2026-05-11 12:00:00,Miscellaneous purchase,UPI Lite,false
+tx_67,8500.0,Other,2026-05-12 16:00:00,Consulting gig,Main Bank,true
+tx_68,570.4,Food,2026-05-12 13:00:00,Groceries,Main Bank,false
+tx_69,128.31,Transport,2026-05-13 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_70,248.35,Food,2026-05-14 13:00:00,Groceries,UPI Lite,false
+tx_71,8000.0,Bills,2026-05-15 12:00:00,EMI - MacBook Air,Main Bank,false
+tx_72,199.0,Entertainment,2026-05-15 09:15:00,Spotify Premium,UPI Lite,false
+tx_73,101.94,Food,2026-05-15 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_74,158.25,Transport,2026-05-15 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_75,102.89,Food,2026-05-16 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_76,633.74,Entertainment,2026-05-16 21:00:00,Weekend pub/dinner,Main Bank,false
+tx_77,155.74,Food,2026-05-17 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_78,467.96,Food,2026-05-18 13:00:00,Groceries,Main Bank,false
+tx_79,78.33,Food,2026-05-18 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_80,171.53,Transport,2026-05-18 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_81,869.32,Transport,2026-05-18 11:00:00,Petrol refill,Main Bank,false
+tx_82,194.14,Food,2026-05-19 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_83,705.62,Transport,2026-05-19 11:00:00,Petrol refill,Main Bank,false
+tx_84,799.0,Bills,2026-05-20 10:00:00,Wifi & Mobile Bill,UPI Lite,false
+tx_85,117.68,Transport,2026-05-20 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_86,583.14,Food,2026-05-21 13:00:00,Groceries,Main Bank,false
+tx_87,105.33,Food,2026-05-21 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_88,242.05,Transport,2026-05-22 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_89,100.45,Food,2026-05-23 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_90,118.06,Transport,2026-05-25 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_91,1366.79,Transport,2026-05-25 11:00:00,Petrol refill,Main Bank,false
+tx_92,295.21,Food,2026-05-26 13:00:00,Groceries,UPI Lite,false
+tx_93,177.04,Transport,2026-05-27 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_94,575.9,Food,2026-05-28 13:00:00,Restaurant dine out,Main Bank,false
+tx_95,182.96,Food,2026-05-29 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_96,169.22,Transport,2026-05-29 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_97,220.95,Food,2026-05-30 13:00:00,Restaurant dine out,UPI Lite,false
+tx_98,298.53,Food,2026-05-31 13:00:00,Restaurant dine out,UPI Lite,false
+tx_99,55000.0,Other,2026-06-01 09:00:00,Monthly Salary,Main Bank,true
+tx_100,1500.0,Health,2026-06-01 07:30:00,Gym Membership,Main Bank,false
+tx_101,217.22,Transport,2026-06-01 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_102,377.19,Food,2026-06-02 13:00:00,Groceries,UPI Lite,false
+tx_103,12000.0,Bills,2026-06-03 10:00:00,Rent Payment,Main Bank,false
+tx_104,110.79,Transport,2026-06-03 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_105,567.52,Transport,2026-06-04 11:00:00,Petrol refill,Main Bank,false
+tx_106,499.0,Entertainment,2026-06-05 08:00:00,Netflix Subscription,Main Bank,false
+tx_107,97.53,Food,2026-06-05 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_108,83.81,Transport,2026-06-05 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_109,274.27,Food,2026-06-06 13:00:00,Restaurant dine out,UPI Lite,false
+tx_110,280.41,Health,2026-06-07 15:00:00,Doctor consultation fee,UPI Lite,false
+tx_111,2248.0,Bills,2026-06-08 18:00:00,Electricity Bill,Main Bank,false
+tx_112,126.03,Transport,2026-06-08 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_113,528.61,Transport,2026-06-08 11:00:00,Petrol refill,Main Bank,false
+tx_114,406.23,Food,2026-06-09 13:00:00,Restaurant dine out,Main Bank,false
+tx_115,6000.0,Bills,2026-06-10 12:00:00,EMI - iPhone 15,Main Bank,false
+tx_116,136.89,Transport,2026-06-10 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_117,401.54,Food,2026-06-11 13:00:00,Groceries,Main Bank,false
+tx_118,171.47,Food,2026-06-11 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_119,432.07,Food,2026-06-12 13:00:00,Restaurant dine out,Main Bank,false
+tx_120,176.14,Food,2026-06-12 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_121,226.49,Transport,2026-06-12 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_122,178.53,Food,2026-06-13 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_123,524.4,Food,2026-06-14 13:00:00,Restaurant dine out,Main Bank,false
+tx_124,159.95,Food,2026-06-14 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_125,8000.0,Bills,2026-06-15 12:00:00,EMI - MacBook Air,Main Bank,false
+tx_126,199.0,Entertainment,2026-06-15 09:15:00,Spotify Premium,UPI Lite,false
+tx_127,140.85,Food,2026-06-15 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_128,188.05,Transport,2026-06-15 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_129,275.79,Food,2026-06-16 13:00:00,Restaurant dine out,UPI Lite,false
+tx_130,135.5,Food,2026-06-17 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_131,173.96,Transport,2026-06-17 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_132,661.44,Transport,2026-06-17 11:00:00,Petrol refill,Main Bank,false
+tx_133,180.12,Food,2026-06-19 13:00:00,Groceries,UPI Lite,false
+tx_134,142.96,Transport,2026-06-19 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_135,1011.59,Transport,2026-06-19 11:00:00,Petrol refill,Main Bank,false
+tx_136,799.0,Bills,2026-06-20 10:00:00,Wifi & Mobile Bill,UPI Lite,false
+tx_137,582.93,Food,2026-06-20 13:00:00,Groceries,Main Bank,false
+tx_138,1420.5,Transport,2026-06-20 11:00:00,Petrol refill,Main Bank,false
+tx_139,239.98,Transport,2026-06-22 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_140,775.86,Transport,2026-06-22 11:00:00,Petrol refill,Main Bank,false
+tx_141,574.85,Food,2026-06-23 13:00:00,Restaurant dine out,Main Bank,false
+tx_142,246.56,Food,2026-06-24 13:00:00,Groceries,UPI Lite,false
+tx_143,138.75,Transport,2026-06-24 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_144,12000.0,Other,2026-06-25 11:15:00,Freelance App Dev,Main Bank,true
+tx_145,135.08,Transport,2026-06-26 18:30:00,Auto / Cab Ride,UPI Lite,false
+tx_146,1035.13,Transport,2026-06-26 11:00:00,Petrol refill,Main Bank,false
+tx_147,390.93,Food,2026-06-27 13:00:00,Groceries,UPI Lite,false
+tx_148,69.6,Food,2026-06-28 17:30:00,Snacks & Coffee,UPI Lite,false
+tx_149,159.51,Food,2026-06-29 13:00:00,Groceries,UPI Lite,false
+tx_150,112.06,Transport,2026-06-29 18:30:00,Auto / Cab Ride,UPI Lite,false

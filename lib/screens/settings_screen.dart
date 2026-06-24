@@ -4,6 +4,10 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
 import '../providers/tour_provider.dart';
+import '../providers/expense_provider.dart';
+import '../providers/split_provider.dart';
+import '../providers/currency_provider.dart';
+import '../services/backup_service.dart';
 import 'manage_categories_screen.dart';
 import 'manage_budgets_screen.dart';
 import 'manage_wallets_screen.dart';
@@ -34,6 +38,79 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _useBiometrics = value;
     });
+  }
+
+  Future<void> _handleBackup() async {
+    try {
+      final path = await BackupService.exportBackup();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(path != null
+              ? 'Backup saved. Keep this file safe to restore later.'
+              : 'Backup cancelled.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Backup failed: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _handleRestore() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Restore from backup?'),
+        content: const Text(
+            'This replaces ALL current data in the app with the contents of the backup file. This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Restore'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+
+    try {
+      final restored = await BackupService.importBackup();
+      if (!mounted || !restored) return;
+
+      await context.read<ExpenseProvider>().reloadAll();
+      if (!mounted) return;
+      await context.read<SplitProvider>().loadData();
+      if (!mounted) return;
+      context.read<ThemeProvider>().loadTheme();
+
+      setState(() {
+        _useBiometrics =
+            Hive.box('settings_v1').get('useBiometrics', defaultValue: false);
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Backup restored successfully.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } on BackupException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Restore failed: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -69,6 +146,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     return DropdownMenuItem<ThemeMode>(
                       value: mode,
                       child: Text(mode.name.toUpperCase()),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+          const Divider(),
+          Consumer<CurrencyProvider>(
+            builder: (context, currencyProvider, child) {
+              return ListTile(
+                title: const Text('Currency'),
+                subtitle: Text(
+                    'Current: ${currencyProvider.selectedCurrency.name} (${currencyProvider.code} ${currencyProvider.symbol})'),
+                leading: const Icon(Icons.monetization_on_outlined),
+                trailing: DropdownButton<String>(
+                  value: currencyProvider.code,
+                  onChanged: (String? newValue) {
+                    if (newValue != null) {
+                      currencyProvider.setCurrency(newValue);
+                    }
+                  },
+                  items: currencyProvider.availableCurrencies.map((CurrencyInfo info) {
+                    return DropdownMenuItem<String>(
+                      value: info.code,
+                      child: Text('${info.code} (${info.symbol})'),
                     );
                   }).toList(),
                 ),
@@ -117,6 +219,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             },
           ),
 
+          const Divider(),
+          ListTile(
+            title: const Text('Backup Data'),
+            subtitle: const Text('Save all your data to a file you can keep safe'),
+            leading: const Icon(Icons.backup_outlined),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _handleBackup,
+          ),
+          const Divider(),
+          ListTile(
+            title: const Text('Restore Data'),
+            subtitle: const Text('Replace current data with a backup file'),
+            leading: const Icon(Icons.settings_backup_restore),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _handleRestore,
+          ),
           const Divider(),
           ListTile(
             title: const Text('Manage Wallets'),

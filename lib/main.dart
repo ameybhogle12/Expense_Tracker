@@ -19,6 +19,7 @@ import 'providers/expense_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/split_provider.dart';
 import 'providers/tour_provider.dart';
+import 'providers/currency_provider.dart';
 import 'screens/auth_wrapper.dart';
 
 @pragma('vm:entry-point') // Mandatory for Workmanager
@@ -59,7 +60,7 @@ void main() async {
 
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: true,
+      isInDebugMode: false,
     );
 
     // Register the periodic task for closed-app logging
@@ -100,6 +101,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => CurrencyProvider()),
         ChangeNotifierProvider(create: (_) => ExpenseProvider()..loadData()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()..loadTheme()),
         ChangeNotifierProvider(create: (_) => SplitProvider()..loadData()),
@@ -118,7 +120,7 @@ class MyApp extends StatelessWidget {
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, child) {
         return MaterialApp(
-          title: 'Expense Tracker',
+          title: 'Trip & Track',
           debugShowCheckedModeBanner: false,
           themeMode: themeProvider.themeMode,
           theme: ThemeData(

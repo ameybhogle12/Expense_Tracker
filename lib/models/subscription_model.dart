@@ -8,28 +8,28 @@ class SubscriptionModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final double amount;
+  double amount;
 
   @HiveField(2)
-  final String category;
+  String category;
 
   @HiveField(3)
-  final String paymentMethod; 
+  String paymentMethod;
 
   @HiveField(4)
-  final String note;
+  String note;
 
   @HiveField(5)
-  final int paymentDay; 
+  int paymentDay;
 
   @HiveField(6)
-  DateTime? lastProcessed; 
+  DateTime? lastProcessed;
 
   @HiveField(7, defaultValue: 0)
-  final int paymentHour;
+  int paymentHour;
 
   @HiveField(8, defaultValue: 0)
-  final int paymentMinute;
+  int paymentMinute;
 
   SubscriptionModel({
     required this.id,

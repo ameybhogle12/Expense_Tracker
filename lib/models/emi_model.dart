@@ -8,28 +8,28 @@ class EmiModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final String itemName;
+  String itemName;
 
   @HiveField(2)
-  final double totalAmount;
+  double totalAmount;
 
   @HiveField(3)
-  final double monthlyInstallment;
+  double monthlyInstallment;
 
   @HiveField(4)
-  final int totalMonths;
+  int totalMonths;
 
   @HiveField(5)
-  int monthsPaid; 
+  int monthsPaid;
 
   @HiveField(6)
-  final int paymentDay;
+  int paymentDay;
 
   @HiveField(7)
   DateTime? lastProcessed;
 
   @HiveField(8)
-  final String paymentMethod; 
+  String paymentMethod;
 
   EmiModel({
     required this.id,

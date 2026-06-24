@@ -1,154 +1,296 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../widgets/dashboard_kpi_cards.dart';
+import '../widgets/income_expense_chart.dart';
+import '../widgets/category_donut_chart.dart';
+import '../widgets/budgets_overview.dart';
+import '../widgets/goals_progress_section.dart';
+import '../widgets/upcoming_bills_section.dart';
 
-class ChartsScreen extends StatelessWidget {
+enum _FilterPreset { thisMonth, lastMonth, last3Months, ytd }
+
+class ChartsScreen extends StatefulWidget {
   const ChartsScreen({super.key});
+
+  @override
+  State<ChartsScreen> createState() => _ChartsScreenState();
+}
+
+class _ChartsScreenState extends State<ChartsScreen> {
+  late int _selectedYear;
+  late int _selectedMonth;
+  _FilterPreset _activePreset = _FilterPreset.thisMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedYear = now.year;
+    _selectedMonth = now.month;
+  }
+
+  void _goToPreviousMonth() {
+    setState(() {
+      _activePreset = _FilterPreset.thisMonth; // reset preset on manual nav
+      if (_selectedMonth == 1) {
+        _selectedMonth = 12;
+        _selectedYear--;
+      } else {
+        _selectedMonth--;
+      }
+    });
+  }
+
+  void _goToNextMonth() {
+    final now = DateTime.now();
+    // Don't allow navigating past the current month
+    if (_selectedYear == now.year && _selectedMonth == now.month) return;
+    setState(() {
+      _activePreset = _FilterPreset.thisMonth;
+      if (_selectedMonth == 12) {
+        _selectedMonth = 1;
+        _selectedYear++;
+      } else {
+        _selectedMonth++;
+      }
+    });
+  }
+
+  void _applyPreset(_FilterPreset preset) {
+    final now = DateTime.now();
+    setState(() {
+      _activePreset = preset;
+      _selectedYear = now.year;
+      _selectedMonth = now.month;
+      if (preset == _FilterPreset.lastMonth) {
+        if (_selectedMonth == 1) {
+          _selectedMonth = 12;
+          _selectedYear--;
+        } else {
+          _selectedMonth--;
+        }
+      }
+    });
+  }
+
+  int get _trendMonths {
+    switch (_activePreset) {
+      case _FilterPreset.last3Months:
+        return 3;
+      case _FilterPreset.ytd:
+        final now = DateTime.now();
+        return now.month;
+      case _FilterPreset.thisMonth:
+      case _FilterPreset.lastMonth:
+        return 6;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ExpenseProvider>();
-    final expenses = provider.expenses;
+    final theme = Theme.of(context);
+    final now = DateTime.now();
+    final isCurrentMonth =
+        _selectedYear == now.year && _selectedMonth == now.month;
 
-    if (expenses.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Expense Charts')),
-        body: const Center(
-          child: Text('No data available for charts.'),
-        ),
-      );
-    }
+    // KPI data
+    final income = provider.getMonthlyIncome(_selectedYear, _selectedMonth);
+    final expense = provider.getMonthlyExpense(_selectedYear, _selectedMonth);
+
+    // Previous month for % change comparison
+    final prevDate = DateTime(_selectedYear, _selectedMonth - 1, 1);
+    final prevIncome = provider.getMonthlyIncome(prevDate.year, prevDate.month);
+    final prevExpense =
+        provider.getMonthlyExpense(prevDate.year, prevDate.month);
+
+    // Trend data
+    final trendData = provider.getMonthlyTrend(_trendMonths);
+
+    final monthLabel = DateFormat.yMMMM()
+        .format(DateTime(_selectedYear, _selectedMonth));
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Expense Charts', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Analytics',
+            style: TextStyle(fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Spending by Category',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            // ── Month Selector ──────────────────────────────────
+            _buildMonthSelector(theme, monthLabel, isCurrentMonth),
+            const SizedBox(height: 12),
+
+            // ── Filter Preset Chips ─────────────────────────────
+            _buildFilterChips(theme),
+            const SizedBox(height: 20),
+
+            // ── Section 1: KPI Cards ────────────────────────────
+            DashboardKpiCards(
+              income: income,
+              expense: expense,
+              prevIncome: prevIncome,
+              prevExpense: prevExpense,
             ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 250,
-              child: _buildCategoryPieChart(provider, context),
+            const SizedBox(height: 28),
+
+            // ── Section 2: Income vs Expense Line Chart ─────────
+            IncomeExpenseChart(trendData: trendData),
+            const SizedBox(height: 28),
+
+            // ── Section 3: Category Donut Chart ─────────────────
+            CategoryDonutChart(
+              year: _selectedYear,
+              month: _selectedMonth,
             ),
-            const SizedBox(height: 48),
-            Text(
-              'Daily Spending (This Month)',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 250,
-              child: _buildDailyBarChart(provider, context),
-            ),
-            const SizedBox(height: 80),
+            const SizedBox(height: 28),
+
+            // ── Section 4: Budget Tracker ───────────────────────
+            const BudgetsOverview(),
+            const SizedBox(height: 28),
+
+            // ── Section 5: Savings Goals ────────────────────────
+            const GoalsProgressSection(),
+            const SizedBox(height: 28),
+
+            // ── Section 6: Upcoming Bills ───────────────────────
+            const UpcomingBillsSection(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCategoryPieChart(ExpenseProvider provider, BuildContext context) {
-    final List<PieChartSectionData> sections = [];
-    double total = provider.totalMonthlySpending;
-
-    if (total == 0) return const Center(child: Text('No spending this month.'));
-
-    for (final category in provider.categories) {
-      final spent = provider.getCategorySpending(category.name);
-      if (spent > 0) {
-        final percentage = (spent / total) * 100;
-        sections.add(
-          PieChartSectionData(
-            color: Color(category.colorValue),
-            value: spent,
-            title: '${percentage.toStringAsFixed(1)}%',
-            radius: 50,
-            titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+  Widget _buildMonthSelector(
+      ThemeData theme, String monthLabel, bool isCurrentMonth) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            onPressed: _goToPreviousMonth,
+            icon: const Icon(Icons.chevron_left_rounded),
+            iconSize: 28,
+            style: IconButton.styleFrom(
+              backgroundColor:
+                  theme.colorScheme.primary.withOpacity(0.08),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
-        );
-      }
-    }
-
-    return PieChart(
-      PieChartData(
-        sectionsSpace: 2,
-        centerSpaceRadius: 60,
-        sections: sections,
+          Text(
+            monthLabel,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          IconButton(
+            onPressed: isCurrentMonth ? null : _goToNextMonth,
+            icon: const Icon(Icons.chevron_right_rounded),
+            iconSize: 28,
+            style: IconButton.styleFrom(
+              backgroundColor: isCurrentMonth
+                  ? null
+                  : theme.colorScheme.primary.withOpacity(0.08),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildDailyBarChart(ExpenseProvider provider, BuildContext context) {
-    final now = DateTime.now();
-    final daysInMonth = DateUtils.getDaysInMonth(now.year, now.month);
-    
-    // Group by day exactly
-    Map<int, double> dailyTotals = {};
-    for (int i = 1; i <= daysInMonth; i++) {
-      dailyTotals[i] = 0.0;
-    }
-
-    for (final e in provider.expenses) {
-      if (e.date.year == now.year && e.date.month == now.month) {
-        dailyTotals[e.date.day] = (dailyTotals[e.date.day] ?? 0) + e.amount;
-      }
-    }
-
-    // Determine max Y for the chart scaling
-    double maxY = 0;
-    dailyTotals.forEach((key, value) {
-      if (value > maxY) maxY = value;
-    });
-    
-    if (maxY == 0) maxY = 10; // Default if nothing is there
-    maxY = maxY * 1.2; // Give 20% headroom
-
-    final barGroups = dailyTotals.entries.map((entry) {
-      return BarChartGroupData(
-        x: entry.key,
-        barRods: [
-          BarChartRodData(
-            toY: entry.value,
-            color: Theme.of(context).colorScheme.primary,
-            width: 8,
-            borderRadius: BorderRadius.circular(4),
+  Widget _buildFilterChips(ThemeData theme) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _FilterChip(
+            label: 'This Month',
+            isActive: _activePreset == _FilterPreset.thisMonth,
+            onTap: () => _applyPreset(_FilterPreset.thisMonth),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Last Month',
+            isActive: _activePreset == _FilterPreset.lastMonth,
+            onTap: () => _applyPreset(_FilterPreset.lastMonth),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Last 3 Months',
+            isActive: _activePreset == _FilterPreset.last3Months,
+            onTap: () => _applyPreset(_FilterPreset.last3Months),
+          ),
+          const SizedBox(width: 8),
+          _FilterChip(
+            label: 'Year to Date',
+            isActive: _activePreset == _FilterPreset.ytd,
+            onTap: () => _applyPreset(_FilterPreset.ytd),
           ),
         ],
-      );
-    }).toList();
+      ),
+    );
+  }
+}
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: maxY,
-        titlesData: FlTitlesData(
-          show: true,
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (value, meta) {
-                if (value % 5 == 0 || value == 1 || value == daysInMonth) {
-                  return Text(value.toInt().toString(), style: const TextStyle(fontSize: 10));
-                }
-                return const SizedBox.shrink();
-              },
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isActive
+                ? theme.colorScheme.primary
+                : theme.colorScheme.surfaceContainerHighest.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(20),
+            border: isActive
+                ? null
+                : Border.all(
+                    color: theme.dividerColor.withOpacity(0.15)),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isActive
+                  ? theme.colorScheme.onPrimary
+                  : theme.colorScheme.onSurface.withOpacity(0.7),
             ),
           ),
         ),
-        gridData: const FlGridData(show: false),
-        borderData: FlBorderData(show: false),
-        barGroups: barGroups,
       ),
     );
   }

@@ -2,24 +2,72 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../models/subscription_model.dart';
 
 class SubscriptionsScreen extends StatelessWidget {
   const SubscriptionsScreen({super.key});
 
-  void _showAddSubscriptionDialog(BuildContext context) {
+  void _showSubscriptionForm(BuildContext context, {SubscriptionModel? existing}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (ctx) => const AddSubscriptionForm(),
+      builder: (ctx) => AddSubscriptionForm(existing: existing),
+    );
+  }
+
+  void _showActions(BuildContext context, SubscriptionModel sub) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit),
+              title: const Text('Edit'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showSubscriptionForm(context, existing: sub);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete, color: Colors.red),
+              title: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onTap: () {
+                Navigator.pop(ctx);
+                context.read<ExpenseProvider>().deleteSubscription(sub);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<bool?> _confirmDelete(BuildContext context, String name) {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete subscription?'),
+        content: Text('"$name" will be removed. This won\'t delete transactions already logged.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final subscriptions = context.watch<ExpenseProvider>().subscriptions;
-    final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -46,20 +94,26 @@ class SubscriptionsScreen extends StatelessWidget {
                       padding: const EdgeInsets.only(right: 20.0),
                       child: const Icon(Icons.delete, color: Colors.white),
                     ),
+                    confirmDismiss: (direction) => _confirmDelete(context, sub.note.isNotEmpty ? sub.note : sub.category),
                     onDismissed: (direction) {
                       context.read<ExpenseProvider>().deleteSubscription(sub);
                     },
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
+                      onTap: () => _showActions(context, sub),
                       leading: CircleAvatar(
                         backgroundColor: color.withOpacity(0.2),
                         child: Icon(catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.subscriptions, color: color),
                       ),
                       title: Text(sub.note.isNotEmpty ? sub.note : sub.category, style: const TextStyle(fontWeight: FontWeight.w600)),
                       subtitle: Text('Billed on day ${sub.paymentDay} • ${sub.paymentMethod}'),
-                      trailing: Text(
-                        currencyFormat.format(sub.amount),
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(currencyProvider.format(sub.amount), style: const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                        ],
                       ),
                     ),
                   ),
@@ -67,7 +121,7 @@ class SubscriptionsScreen extends StatelessWidget {
               },
             ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddSubscriptionDialog(context),
+        onPressed: () => _showSubscriptionForm(context),
         icon: const Icon(Icons.add),
         label: const Text('New Subscription'),
       ),
@@ -76,7 +130,9 @@ class SubscriptionsScreen extends StatelessWidget {
 }
 
 class AddSubscriptionForm extends StatefulWidget {
-  const AddSubscriptionForm({super.key});
+  /// When provided, the form opens in edit mode for this subscription.
+  final SubscriptionModel? existing;
+  const AddSubscriptionForm({super.key, this.existing});
 
   @override
   State<AddSubscriptionForm> createState() => _AddSubscriptionFormState();
@@ -86,15 +142,28 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
   String? _selectedCategory;
-  late String _paymentMethod; 
-  int _paymentDay = DateTime.now().day; 
-  TimeOfDay _paymentTime = const TimeOfDay(hour: 9, minute: 0); 
+  late String _paymentMethod;
+  int _paymentDay = DateTime.now().day;
+  TimeOfDay _paymentTime = const TimeOfDay(hour: 9, minute: 0);
+
+  bool get _isEditing => widget.existing != null;
 
   @override
   void initState() {
     super.initState();
     final wallets = context.read<ExpenseProvider>().wallets.map((w) => w.name).toList();
     _paymentMethod = wallets.isNotEmpty ? wallets.first : 'Main Bank';
+
+    final existing = widget.existing;
+    if (existing != null) {
+      _amountController.text = existing.amount.toStringAsFixed(
+          existing.amount == existing.amount.roundToDouble() ? 0 : 2);
+      _noteController.text = existing.note;
+      _selectedCategory = existing.category;
+      _paymentMethod = existing.paymentMethod;
+      _paymentDay = existing.paymentDay;
+      _paymentTime = TimeOfDay(hour: existing.paymentHour, minute: existing.paymentMinute);
+    }
   }
 
   void _presentTimePicker() async {
@@ -111,6 +180,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
 
   void _submitData() async {
     try {
+      final provider = context.read<ExpenseProvider>();
       final enteredAmount = double.tryParse(_amountController.text.trim().replaceAll(',', ''));
       if (enteredAmount == null || enteredAmount <= 0) {
         if (mounted) {
@@ -119,22 +189,60 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
         return;
       }
 
-      final newSub = SubscriptionModel(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
-        amount: enteredAmount,
-        category: _selectedCategory ?? context.read<ExpenseProvider>().categories.first.name,
-        paymentMethod: _paymentMethod,
-        note: _noteController.text.trim(),
-        paymentDay: _paymentDay,
-        paymentHour: _paymentTime.hour,
-        paymentMinute: _paymentTime.minute,
-        lastProcessed: null, 
-      );
+      final note = _noteController.text.trim();
+      final category = _selectedCategory ?? provider.categories.first.name;
 
-      await context.read<ExpenseProvider>().addSubscription(newSub);
-      
+      // Warn (but allow) when this looks like a duplicate of an existing one.
+      if (provider.isLikelyDuplicateSubscription(
+        note: note,
+        amount: enteredAmount,
+        category: category,
+        paymentDay: _paymentDay,
+        excludeId: widget.existing?.id,
+      )) {
+        final label = note.isNotEmpty ? '"$note"' : 'this recurring charge';
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Possible duplicate'),
+            content: Text('You already have a subscription that matches $label. Add it anyway?'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Add Anyway')),
+            ],
+          ),
+        );
+        if (proceed != true) return;
+      }
+
+      if (_isEditing) {
+        await provider.updateSubscription(
+          widget.existing!,
+          amount: enteredAmount,
+          category: category,
+          paymentMethod: _paymentMethod,
+          note: note,
+          paymentDay: _paymentDay,
+          paymentHour: _paymentTime.hour,
+          paymentMinute: _paymentTime.minute,
+        );
+      } else {
+        final newSub = SubscriptionModel(
+          id: DateTime.now().microsecondsSinceEpoch.toString(),
+          amount: enteredAmount,
+          category: category,
+          paymentMethod: _paymentMethod,
+          note: note,
+          paymentDay: _paymentDay,
+          paymentHour: _paymentTime.hour,
+          paymentMinute: _paymentTime.minute,
+          lastProcessed: null,
+        );
+        await provider.addSubscription(newSub);
+      }
+
       if (mounted) {
-        Navigator.pop(context); 
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -146,6 +254,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
   @override
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     return SingleChildScrollView(
       child: Padding(
@@ -153,12 +262,12 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Add Subscription', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(_isEditing ? 'Edit Subscription' : 'Add Subscription', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             TextField(
               controller: _amountController,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              decoration: const InputDecoration(labelText: 'Amount', prefixText: '₹ ', border: OutlineInputBorder()),
+              decoration: InputDecoration(labelText: 'Amount', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder()),
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
@@ -208,7 +317,7 @@ class _AddSubscriptionFormState extends State<AddSubscriptionForm> {
             FilledButton(
               onPressed: _submitData,
               style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-              child: const Text('Save Subscription', style: TextStyle(fontSize: 16)),
+              child: Text(_isEditing ? 'Update Subscription' : 'Save Subscription', style: const TextStyle(fontSize: 16)),
             ),
           ],
         ),

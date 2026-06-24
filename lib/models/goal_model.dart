@@ -8,22 +8,22 @@ class GoalModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final String name;
+  String name;
 
   @HiveField(2)
-  final double targetAmount;
+  double targetAmount;
 
   @HiveField(3)
   double savedAmount;
 
   @HiveField(4)
-  final DateTime? deadline;
+  DateTime? deadline;
 
   @HiveField(5)
-  final int colorValue;
+  int colorValue;
 
   @HiveField(6)
-  final int iconCodePoint;
+  int iconCodePoint;
 
   GoalModel({
     required this.id,

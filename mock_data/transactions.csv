@@ -1,0 +1,26 @@
+Transaction ID,Date,Type,Category,Amount,Payment Method,Note
+TX_1001,2026-05-01,Income,Salary,75000.00,Main Bank,Monthly Salary Credit
+TX_1002,2026-05-02,Expense,Bills,12000.00,Main Bank,Apartment Rent
+TX_1003,2026-05-03,Expense,Food,450.00,UPI Lite,Lunch with office team
+TX_1004,2026-05-04,Expense,Transport,120.00,UPI Lite,Auto ride to station
+TX_1005,2026-05-05,Expense,Shopping,2499.00,Main Bank,New shoes from Nike
+TX_1006,2026-05-06,Expense,Bills,1500.00,Main Bank,Electricity bill
+TX_1007,2026-05-07,Expense,Entertainment,600.00,UPI Lite,Movie ticket & snacks
+TX_1008,2026-05-08,Expense,Food,320.00,Cash,Groceries from local vendor
+TX_1009,2026-05-09,Expense,Health,850.00,UPI Lite,Monthly medicines
+TX_1010,2026-05-10,Income,Freelance,15000.00,Main Bank,UI design project payout
+TX_1011,2026-05-12,Expense,Food,850.00,Main Bank,Dinner with family
+TX_1012,2026-05-13,Expense,Transport,450.00,UPI Lite,Uber ride
+TX_1013,2026-05-15,Expense,Bills,350.00,UPI Lite,Mobile recharge
+TX_1014,2026-05-18,Expense,Shopping,1200.00,UPI Lite,T-shirts
+TX_1015,2026-05-20,Expense,Other,500.00,Cash,Gift to cousin
+TX_1016,2026-05-22,Expense,Food,380.00,UPI Lite,Coffee and snacks
+TX_1017,2026-05-24,Expense,Entertainment,1200.00,Main Bank,Concert ticket
+TX_1018,2026-05-25,Expense,Transport,150.00,UPI Lite,Metro card recharge
+TX_1019,2026-05-28,Expense,Food,650.00,UPI Lite,Weekend dinner
+TX_1020,2026-05-30,Expense,Health,300.00,Cash,Multivitamins
+TX_1021,2026-06-01,Income,Salary,75000.00,Main Bank,Monthly Salary Credit
+TX_1022,2026-06-02,Expense,Bills,12000.00,Main Bank,Apartment Rent
+TX_1023,2026-06-03,Expense,Food,520.00,UPI Lite,Pizza delivery
+TX_1024,2026-06-04,Expense,Transport,100.00,UPI Lite,Auto fare
+TX_1025,2026-06-05,Expense,Shopping,4500.00,Main Bank,Noise cancellation headphones

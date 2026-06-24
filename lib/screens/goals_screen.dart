@@ -2,8 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../models/goal_model.dart';
 import '../models/emi_model.dart';
+
+Future<bool?> _confirmDelete(BuildContext context, String type, String name) {
+  return showDialog<bool>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: Text('Delete $type?'),
+      content: Text('"$name" will be removed permanently.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: Colors.red),
+          onPressed: () => Navigator.pop(ctx, true),
+          child: const Text('Delete'),
+        ),
+      ],
+    ),
+  );
+}
 
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
@@ -78,7 +97,7 @@ class _GoalsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final goals = context.watch<ExpenseProvider>().goals;
-    final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     if (goals.isEmpty) {
       return const Center(child: Padding(
@@ -111,18 +130,41 @@ class _GoalsList extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Icon(IconData(goal.iconCodePoint, fontFamily: 'MaterialIcons'), color: color),
-                        const SizedBox(width: 8),
-                        Text(goal.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                      ],
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Icon(IconData(goal.iconCodePoint, fontFamily: 'MaterialIcons'), color: color),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(goal.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
+                          ),
+                        ],
+                      ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
-                      onPressed: () => context.read<ExpenseProvider>().deleteGoal(goal),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, color: Colors.grey, size: 20),
+                          tooltip: 'Edit goal',
+                          onPressed: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            builder: (ctx) => _AddGoalForm(existing: goal),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                          tooltip: 'Delete goal',
+                          onPressed: () async {
+                            final ok = await _confirmDelete(context, 'goal', goal.name);
+                            if (ok == true && context.mounted) {
+                              context.read<ExpenseProvider>().deleteGoal(goal);
+                            }
+                          },
+                        ),
+                      ],
                     )
                   ],
                 ),
@@ -139,11 +181,11 @@ class _GoalsList extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${currencyFormat.format(goal.savedAmount)} saved',
+                      '${currencyProvider.format(goal.savedAmount)} saved',
                       style: TextStyle(fontWeight: FontWeight.bold, color: color),
                     ),
                     Text(
-                      'Target: ${currencyFormat.format(goal.targetAmount)}',
+                      'Target: ${currencyProvider.format(goal.targetAmount)}',
                       style: const TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   ],
@@ -171,7 +213,7 @@ class _EmisList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final emis = context.watch<ExpenseProvider>().emis;
-    final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     if (emis.isEmpty) {
       return const Center(child: Padding(
@@ -203,18 +245,39 @@ class _EmisList extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(emi.itemName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
-                      onPressed: () => context.read<ExpenseProvider>().deleteEmi(emi),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Expanded(
+                      child: Text(emi.itemName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), overflow: TextOverflow.ellipsis),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit_outlined, color: Colors.grey, size: 20),
+                          tooltip: 'Edit EMI',
+                          onPressed: () => showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            useSafeArea: true,
+                            builder: (ctx) => _AddEmiForm(existing: emi),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.grey, size: 20),
+                          tooltip: 'Delete EMI',
+                          onPressed: () async {
+                            final ok = await _confirmDelete(context, 'EMI', emi.itemName);
+                            if (ok == true && context.mounted) {
+                              context.read<ExpenseProvider>().deleteEmi(emi);
+                            }
+                          },
+                        ),
+                      ],
                     )
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '₹${emi.monthlyInstallment.toStringAsFixed(0)} / mo • Day ${emi.paymentDay}',
+                  '${currencyProvider.format(emi.monthlyInstallment)} / mo • Day ${emi.paymentDay}',
                   style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 16),
@@ -231,7 +294,7 @@ class _EmisList extends StatelessWidget {
                   children: [
                     Text('${emi.monthsPaid} / ${emi.totalMonths} months paid', style: const TextStyle(fontSize: 12)),
                     Text(
-                      'Total: ${currencyFormat.format(emi.totalAmount)}',
+                      'Total: ${currencyProvider.format(emi.totalAmount)}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ],
@@ -246,7 +309,8 @@ class _EmisList extends StatelessWidget {
 }
 
 class _AddGoalForm extends StatefulWidget {
-  const _AddGoalForm();
+  final GoalModel? existing;
+  const _AddGoalForm({this.existing});
   @override
   State<_AddGoalForm> createState() => _AddGoalFormState();
 }
@@ -272,11 +336,22 @@ class _AddGoalFormState extends State<_AddGoalForm> {
   late Color _selectedColor;
   late IconData _selectedIcon;
 
+  bool get _isEditing => widget.existing != null;
+
   @override
   void initState() {
     super.initState();
-    _selectedColor = _vibrantColors[2]; // Default purple
-    _selectedIcon = Icons.star;
+    final existing = widget.existing;
+    if (existing != null) {
+      _nameController.text = existing.name;
+      _amountController.text = existing.targetAmount.toStringAsFixed(
+          existing.targetAmount == existing.targetAmount.roundToDouble() ? 0 : 2);
+      _selectedColor = Color(existing.colorValue);
+      _selectedIcon = IconData(existing.iconCodePoint, fontFamily: 'MaterialIcons');
+    } else {
+      _selectedColor = _vibrantColors[2]; // Default purple
+      _selectedIcon = Icons.star;
+    }
   }
 
   void _submit() {
@@ -284,32 +359,42 @@ class _AddGoalFormState extends State<_AddGoalForm> {
     final name = _nameController.text.trim();
     if (amount == null || amount <= 0 || name.isEmpty) return;
 
-    final goal = GoalModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      name: name,
-      targetAmount: amount,
-      savedAmount: 0.0,
-      colorValue: _selectedColor.value,
-      iconCodePoint: _selectedIcon.codePoint,
-    );
-
-    context.read<ExpenseProvider>().addGoal(goal);
+    if (_isEditing) {
+      context.read<ExpenseProvider>().updateGoal(
+            widget.existing!,
+            name: name,
+            targetAmount: amount,
+            colorValue: _selectedColor.value,
+            iconCodePoint: _selectedIcon.codePoint,
+          );
+    } else {
+      final goal = GoalModel(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        name: name,
+        targetAmount: amount,
+        savedAmount: 0.0,
+        colorValue: _selectedColor.value,
+        iconCodePoint: _selectedIcon.codePoint,
+      );
+      context.read<ExpenseProvider>().addGoal(goal);
+    }
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+    final currencyProvider = context.watch<CurrencyProvider>();
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardSpace + 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('New Savings Goal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(_isEditing ? 'Edit Savings Goal' : 'New Savings Goal', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Goal Name (e.g. iPhone)', border: OutlineInputBorder())),
           const SizedBox(height: 16),
-          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Target Amount', prefixText: '₹ ', border: OutlineInputBorder())),
+          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Target Amount', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
           const SizedBox(height: 16),
           const Text('Color:'),
           Wrap(
@@ -320,7 +405,7 @@ class _AddGoalFormState extends State<_AddGoalForm> {
             )).toList(),
           ),
           const SizedBox(height: 16),
-          FilledButton(onPressed: _submit, child: const Text('Create Goal')),
+          FilledButton(onPressed: _submit, child: Text(_isEditing ? 'Update Goal' : 'Create Goal')),
         ],
       ),
     );
@@ -328,7 +413,8 @@ class _AddGoalFormState extends State<_AddGoalForm> {
 }
 
 class _AddEmiForm extends StatefulWidget {
-  const _AddEmiForm();
+  final EmiModel? existing;
+  const _AddEmiForm({this.existing});
   @override
   State<_AddEmiForm> createState() => _AddEmiFormState();
 }
@@ -340,11 +426,23 @@ class _AddEmiFormState extends State<_AddEmiForm> {
   int _paymentDay = DateTime.now().day;
   late String _paymentMethod;
 
+  bool get _isEditing => widget.existing != null;
+
   @override
   void initState() {
     super.initState();
     final wallets = context.read<ExpenseProvider>().wallets.map((w) => w.name).toList();
     _paymentMethod = wallets.isNotEmpty ? wallets.first : 'Main Bank';
+
+    final existing = widget.existing;
+    if (existing != null) {
+      _nameController.text = existing.itemName;
+      _amountController.text = existing.totalAmount.toStringAsFixed(
+          existing.totalAmount == existing.totalAmount.roundToDouble() ? 0 : 2);
+      _monthsController.text = existing.totalMonths.toString();
+      _paymentDay = existing.paymentDay;
+      _paymentMethod = existing.paymentMethod;
+    }
   }
 
   void _submit() {
@@ -353,36 +451,45 @@ class _AddEmiFormState extends State<_AddEmiForm> {
     final name = _nameController.text.trim();
     if (amount == null || amount <= 0 || name.isEmpty || months == null || months <= 0) return;
 
-    final monthlyInstallment = amount / months;
-
-    final emi = EmiModel(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      itemName: name,
-      totalAmount: amount,
-      monthlyInstallment: monthlyInstallment,
-      totalMonths: months,
-      monthsPaid: 0,
-      paymentDay: _paymentDay,
-      paymentMethod: _paymentMethod,
-    );
-
-    context.read<ExpenseProvider>().addEmi(emi);
+    if (_isEditing) {
+      context.read<ExpenseProvider>().updateEmi(
+            widget.existing!,
+            itemName: name,
+            totalAmount: amount,
+            totalMonths: months,
+            paymentDay: _paymentDay,
+            paymentMethod: _paymentMethod,
+          );
+    } else {
+      final emi = EmiModel(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        itemName: name,
+        totalAmount: amount,
+        monthlyInstallment: amount / months,
+        totalMonths: months,
+        monthsPaid: 0,
+        paymentDay: _paymentDay,
+        paymentMethod: _paymentMethod,
+      );
+      context.read<ExpenseProvider>().addEmi(emi);
+    }
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     final keyboardSpace = MediaQuery.of(context).viewInsets.bottom;
+    final currencyProvider = context.watch<CurrencyProvider>();
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16, 16, 16, keyboardSpace + 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('New No-Cost EMI', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(_isEditing ? 'Edit No-Cost EMI' : 'New No-Cost EMI', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(controller: _nameController, decoration: const InputDecoration(labelText: 'Item Name (e.g. iPhone)', border: OutlineInputBorder())),
           const SizedBox(height: 16),
-          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Total Bill Amount', prefixText: '₹ ', border: OutlineInputBorder())),
+          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Total Bill Amount', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
           const SizedBox(height: 16),
           TextField(controller: _monthsController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Total Duration (Months)', border: OutlineInputBorder())),
           const SizedBox(height: 16),
@@ -400,7 +507,7 @@ class _AddEmiFormState extends State<_AddEmiForm> {
             onChanged: (val) => setState(() => _paymentMethod = val!),
           ),
           const SizedBox(height: 16),
-          FilledButton(onPressed: _submit, child: const Text('Add EMI Tracker')),
+          FilledButton(onPressed: _submit, child: Text(_isEditing ? 'Update EMI' : 'Add EMI Tracker')),
         ],
       ),
     );
@@ -427,12 +534,13 @@ class _AddFundsToGoalDialogState extends State<_AddFundsToGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final currencyProvider = context.watch<CurrencyProvider>();
     return AlertDialog(
       title: Text('Deposit to ${widget.goal.name}'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount to move to savings', prefixText: '₹ ', border: OutlineInputBorder())),
+          TextField(controller: _amountController, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: 'Amount to move to savings', prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ', border: const OutlineInputBorder())),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
             value: _paymentMethod,

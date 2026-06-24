@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../models/budget_model.dart';
 import '../models/category_model.dart';
 
@@ -13,13 +14,13 @@ class ManageBudgetsScreen extends StatefulWidget {
 }
 
 class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
-  final _currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
   void _showSetBudgetDialog(BuildContext context, CategoryModel category, double? currentBudget) {
     final controller = TextEditingController(
       text: currentBudget != null ? currentBudget.toStringAsFixed(0) : '',
     );
     final formKey = GlobalKey<FormState>();
+    final currencyProvider = context.read<CurrencyProvider>();
 
     showDialog(
       context: context,
@@ -57,10 +58,10 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
               TextFormField(
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(decimal: false),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Budget Limit',
-                  prefixText: '₹ ',
-                  border: OutlineInputBorder(),
+                  prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
+                  border: const OutlineInputBorder(),
                   hintText: 'e.g. 1000',
                 ),
                 validator: (value) {
@@ -109,7 +110,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Budget for ${category.name} set to ${_currencyFormat.format(amount)}.'),
+                    content: Text('Budget for ${category.name} set to ${currencyProvider.format(amount)}.'),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
@@ -131,6 +132,7 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
           final categories = provider.categories;
+          final currencyProvider = context.watch<CurrencyProvider>();
 
           if (categories.isEmpty) {
             return const Center(child: Text('No categories found.'));
@@ -230,8 +232,8 @@ class _ManageBudgetsScreenState extends State<ManageBudgetsScreen> {
                           padding: const EdgeInsets.only(top: 4.0),
                           child: Text(
                             isCustomized
-                                ? 'Monthly Limit: ${_currencyFormat.format(customBudget)}'
-                                : 'Using default limit (₹500)',
+                                ? 'Monthly Limit: ${currencyProvider.format(customBudget)}'
+                                : 'Using default limit (${currencyProvider.format(500)})',
                             style: TextStyle(
                               color: isCustomized
                                   ? Theme.of(context).colorScheme.primary

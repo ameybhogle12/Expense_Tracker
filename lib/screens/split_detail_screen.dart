@@ -3,6 +3,7 @@ import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/split_provider.dart';
+import '../providers/currency_provider.dart';
 import '../models/split_trip_model.dart';
 import '../models/split_expense_model.dart';
 import '../widgets/animations.dart';
@@ -20,6 +21,7 @@ class SplitDetailScreen extends StatelessWidget {
     final balances = provider.getBalances(tripId);
     final total = provider.getTripTotal(tripId);
     final colorScheme = Theme.of(context).colorScheme;
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -96,7 +98,7 @@ class SplitDetailScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '₹${total.toStringAsFixed(2)}',
+                  currencyProvider.format(total, decimalDigits: 2),
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.onPrimaryContainer,
@@ -177,7 +179,7 @@ class SplitDetailScreen extends StatelessWidget {
                           SizedBox(
                             width: 75,
                             child: Text(
-                              '${balance >= 0 ? '+' : ''}₹${balance.toStringAsFixed(0)}',
+                              '${balance >= 0 ? '+' : ''}${currencyProvider.format(balance)}',
                               textAlign: TextAlign.end,
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
@@ -282,7 +284,7 @@ class SplitDetailScreen extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    '₹${expense.amount.toStringAsFixed(0)}',
+                                    currencyProvider.format(expense.amount),
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       color: colorScheme.primary,
@@ -356,6 +358,7 @@ class SplitDetailScreen extends StatelessWidget {
         ? List<String>.from(existingExpense.splitAmong)
         : List<String>.from(trip.members);
 
+    final currencyProvider = context.read<CurrencyProvider>();
     showDialog(
       context: context,
       builder: (ctx) {
@@ -382,10 +385,10 @@ class SplitDetailScreen extends StatelessWidget {
                       controller: amountController,
                       keyboardType:
                           const TextInputType.numberWithOptions(decimal: true),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Amount',
-                        prefixText: '₹ ',
-                        border: OutlineInputBorder(),
+                        prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
+                        border: const OutlineInputBorder(),
                       ),
                     ),
                     const SizedBox(height: 12),

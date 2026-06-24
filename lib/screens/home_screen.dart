@@ -6,7 +6,6 @@ import 'package:path_provider/path_provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/tour_provider.dart';
 import '../widgets/dashboard_header.dart';
-import '../widgets/budgets_overview.dart';
 import '../widgets/recent_transactions.dart';
 import 'settings_screen.dart';
 
@@ -19,7 +18,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey _walletsKey = GlobalKey();
-  final GlobalKey _budgetsKey = GlobalKey();
 
   @override
   void initState() {
@@ -28,7 +26,6 @@ class _HomeScreenState extends State<HomeScreen> {
       try {
         final tourProvider = context.read<TourProvider>();
         tourProvider.registerKey('wallets', _walletsKey);
-        tourProvider.registerKey('budgets', _budgetsKey);
       } catch (e) {
         debugPrint("TourProvider not registered yet: $e");
       }
@@ -110,8 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               DashboardHeader(key: _walletsKey),
-              const SizedBox(height: 24),
-              BudgetsOverview(key: _budgetsKey),
               const SizedBox(height: 24),
               const RecentTransactions(),
               const SizedBox(height: 80), // Padding for bottom nav and FAB

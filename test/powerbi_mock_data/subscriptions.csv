@@ -1,0 +1,4 @@
+id,amount,category,note,paymentDay,paymentMethod
+sub_1,499.0,Entertainment,Netflix,5,Main Bank
+sub_2,199.0,Entertainment,Spotify,15,UPI Lite
+sub_3,1500.0,Health,Gym Membership,1,Main Bank

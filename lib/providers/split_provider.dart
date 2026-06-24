@@ -118,6 +118,17 @@ class SplitProvider extends ChangeNotifier {
     return trip.settledPayments.contains('$from->$to');
   }
 
+  // ─── Settlement intro animation (cosmetic, once per trip per session) ──────
+  final Set<String> _settlementAnimationSeen = {};
+
+  /// Whether the settlement screen should play its intro loader for this trip.
+  /// Returns false after the first view this session, so reopening is instant.
+  bool shouldAnimateSettlement(String tripId) =>
+      !_settlementAnimationSeen.contains(tripId);
+
+  void markSettlementAnimationSeen(String tripId) =>
+      _settlementAnimationSeen.add(tripId);
+
   /// Removes a member from a trip AND scrubs them from all expense splits.
   /// Expenses they paid for are reassigned to no-one (deleted).
   /// Returns a summary of affected expenses for UI feedback.

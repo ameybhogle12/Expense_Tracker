@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../screens/manage_budgets_screen.dart';
 import '../models/budget_model.dart';
 import '../models/category_model.dart';
@@ -18,6 +19,7 @@ class BudgetsOverview extends StatelessWidget {
     final controller = TextEditingController(text: currentLimit.toStringAsFixed(0));
     final formKey = GlobalKey<FormState>();
     final isCustomized = provider.getBudgetForCategory(category.name) != null;
+    final currencyProvider = context.read<CurrencyProvider>();
 
     showModalBottomSheet(
       context: context,
@@ -62,10 +64,10 @@ class BudgetsOverview extends StatelessWidget {
                 TextFormField(
                   controller: controller,
                   keyboardType: const TextInputType.numberWithOptions(decimal: false),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Monthly Budget Limit',
-                    prefixText: '₹ ',
-                    border: OutlineInputBorder(),
+                    prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
+                    border: const OutlineInputBorder(),
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -115,7 +117,7 @@ class BudgetsOverview extends StatelessWidget {
                             Navigator.pop(context);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Budget for ${category.name} set to ₹${amount.toStringAsFixed(0)}.'),
+                                content: Text('Budget for ${category.name} set to ${currencyProvider.format(amount)}.'),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );
@@ -137,11 +139,13 @@ class BudgetsOverview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<ExpenseProvider>();
-    final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final currencyProvider = context.watch<CurrencyProvider>();
 
+    // Only show budgets the user has explicitly set, so the home screen
+    // doesn't nag with phantom limits the moment any category is used.
     final activeCategories = provider.categories
         .map((c) => c.name)
-        .where((c) => provider.getCategorySpending(c) > 0 || provider.getBudgetForCategory(c) != null)
+        .where((c) => provider.getBudgetForCategory(c) != null)
         .toList();
 
     return Column(
@@ -170,12 +174,12 @@ class BudgetsOverview extends StatelessWidget {
         if (activeCategories.isEmpty)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 8.0),
-            child: Text('No budgets configured or expenses recorded yet. Tap Manage to customize!'),
+            child: Text('No budgets set yet. Tap Manage to set monthly limits for the categories you want to track.'),
           ),
         ...activeCategories.map((category) {
           final spent = provider.getCategorySpending(category);
           final budgetObj = provider.getBudgetForCategory(category);
-          final budget = budgetObj?.monthlyLimit ?? 500.0; // Default budget if unset
+          final budget = budgetObj!.monthlyLimit;
           final progress = (spent / budget).clamp(0.0, 1.0);
           final catObj = provider.getCategoryByName(category);
           final color = catObj != null ? Color(catObj.colorValue) : Colors.grey;
@@ -222,7 +226,7 @@ class BudgetsOverview extends StatelessWidget {
                           ],
                         ),
                         Text(
-                          '${currencyFormat.format(spent)} / ${currencyFormat.format(budget)}',
+                          '${currencyProvider.format(spent)} / ${currencyProvider.format(budget)}',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
                             color: isOverspent ? Colors.red : null,
@@ -244,8 +248,8 @@ class BudgetsOverview extends StatelessWidget {
                       children: [
                         Text(
                           isOverspent
-                              ? '${currencyFormat.format(spent - budget)} over budget'
-                              : '${currencyFormat.format(budget - spent)} remaining',
+                              ? '${currencyProvider.format(spent - budget)} over budget'
+                              : '${currencyProvider.format(budget - spent)} remaining',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,

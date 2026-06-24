@@ -8,19 +8,19 @@ class ExpenseModel extends HiveObject {
   final String id;
 
   @HiveField(1)
-  final double amount;
+  double amount;
 
   @HiveField(2)
-  final String category;
+  String category;
 
   @HiveField(3)
-  final DateTime date;
+  DateTime date;
 
   @HiveField(4)
-  final String note;
+  String note;
 
   @HiveField(5)
-  String paymentMethod; 
+  String paymentMethod;
 
   @HiveField(6)
   final bool isIncome;

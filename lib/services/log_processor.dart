@@ -33,10 +33,10 @@ class LogProcessor {
         
         if (!hasRecentTransaction) {
           final funnyReminders = [
-            "🧪 Test Subject Alert! Your friend needs your feedback. Did you log any expenses or test the Split Settlement room today? 😉",
-            "👀 Psst... your wallets are feeling lonely! Did you forget to record your snack spending today?",
-            "💸 Did you spend 0 rupees today, or are you just hiding your transactions from me? Tap to log them!",
-            "🕵️‍♂️ Friend Check: Your split-expense friends are waiting for splits! Tap to record split expenses and test!",
+            "👀 Your wallets are looking quiet today. Did you forget to record any spending?",
+            "💸 Spent anything today? Tap to log it before you forget where it went!",
+            "🧾 A quick minute now saves a mystery later — log today's expenses!",
+            "📊 Staying on top of your budget? Tap to add any transactions from today.",
           ];
           
           final index = now.minute % funnyReminders.length;

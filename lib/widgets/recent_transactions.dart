@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../screens/all_transactions_screen.dart';
+import 'transaction_actions.dart';
 
 class RecentTransactions extends StatelessWidget {
   const RecentTransactions({super.key});
@@ -11,7 +13,7 @@ class RecentTransactions extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = context.watch<ExpenseProvider>();
     final transactions = provider.allTransactions.take(5).toList();
-    final currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final currencyProvider = context.watch<CurrencyProvider>();
     final dateFormat = DateFormat('MMM dd, yyyy');
 
     if (transactions.isEmpty) {
@@ -73,20 +75,29 @@ class RecentTransactions extends StatelessWidget {
                   padding: const EdgeInsets.only(right: 20.0),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
+                confirmDismiss: (direction) => confirmDeleteTransaction(context),
                 onDismissed: (direction) {
                   context.read<ExpenseProvider>().deleteExpense(t);
                 },
                 child: ListTile(
                   contentPadding: EdgeInsets.zero,
+                  onTap: () => showTransactionActions(context, t),
                   leading: CircleAvatar(
                     backgroundColor: color.withOpacity(0.2),
                     child: Icon(icon, color: color),
                   ),
                   title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text('${dateFormat.format(t.date)} • ${t.paymentMethod}'),
-                  trailing: Text(
-                    '${t.isIncome ? '+' : '-'} ${currencyFormat.format(t.amount)}',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: t.isIncome ? Colors.green : Colors.red),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '${t.isIncome ? '+' : '-'} ${currencyProvider.format(t.amount)}',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: t.isIncome ? Colors.green : Colors.red),
+                      ),
+                      const SizedBox(width: 4),
+                      const Icon(Icons.more_vert, size: 18, color: Colors.grey),
+                    ],
                   ),
                 ),
               ),

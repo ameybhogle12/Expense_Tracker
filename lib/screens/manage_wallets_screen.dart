@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/expense_provider.dart';
+import '../providers/currency_provider.dart';
 import '../models/wallet_model.dart';
 
 class ManageWalletsScreen extends StatefulWidget {
@@ -12,12 +13,12 @@ class ManageWalletsScreen extends StatefulWidget {
 }
 
 class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
-  final _currencyFormat = NumberFormat.currency(name: 'INR', locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
   void _showAddWalletDialog(BuildContext context) {
     final nameController = TextEditingController();
     final balanceController = TextEditingController();
     final formKey = GlobalKey<FormState>();
+    final currencyProvider = context.read<CurrencyProvider>();
 
     showDialog(
       context: context,
@@ -58,11 +59,11 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
               TextFormField(
                 controller: balanceController,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Starting Balance (Optional)',
-                  prefixText: '₹ ',
+                  prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
                   hintText: '0',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                 ),
                 validator: (value) {
                   if (value != null && value.trim().isNotEmpty) {
@@ -239,6 +240,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
       body: Consumer<ExpenseProvider>(
         builder: (context, provider, child) {
           final wallets = provider.wallets;
+          final currencyProvider = context.watch<CurrencyProvider>();
           final totalNetWorth = wallets.fold(0.0, (sum, w) => sum + provider.getWalletBalance(w.name));
 
           return Column(
@@ -277,7 +279,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          _currencyFormat.format(totalNetWorth),
+                          currencyProvider.format(totalNetWorth),
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 28,
@@ -361,7 +363,7 @@ class _ManageWalletsScreenState extends State<ManageWalletsScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Text(
-                                    _currencyFormat.format(balance),
+                                    currencyProvider.format(balance),
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 18,

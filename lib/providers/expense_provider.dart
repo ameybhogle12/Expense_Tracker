@@ -172,6 +172,21 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Reloads every list straight from Hive. Used after a backup restore,
+  /// which rewrites the boxes underneath the provider.
+  Future<void> reloadAll() async {
+    _transactions = Hive.box<ExpenseModel>(expenseBoxName).values.toList()
+      ..sort((a, b) => b.date.compareTo(a.date));
+    _budgets = Hive.box<BudgetModel>(budgetBoxName).values.toList();
+    _subscriptions =
+        Hive.box<SubscriptionModel>(subscriptionBoxName).values.toList();
+    _categories = Hive.box<CategoryModel>(categoryBoxName).values.toList();
+    _goals = Hive.box<GoalModel>(goalBoxName).values.toList();
+    _emis = Hive.box<EmiModel>(emiBoxName).values.toList();
+    _wallets = Hive.box<WalletModel>(walletBoxName).values.toList();
+    notifyListeners();
+  }
+
   Future<void> _syncAutomatedLogs({bool isBackground = true}) async {
     await LogProcessor.processAll(isBackground: isBackground);
 
@@ -191,6 +206,24 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Future<void> updateExpense(
+    ExpenseModel transaction, {
+    required double amount,
+    required String category,
+    required String paymentMethod,
+    required DateTime date,
+    required String note,
+  }) async {
+    transaction.amount = amount;
+    transaction.category = category;
+    transaction.paymentMethod = paymentMethod;
+    transaction.date = date;
+    transaction.note = note;
+    await transaction.save();
+    _transactions.sort((a, b) => b.date.compareTo(a.date));
+    notifyListeners();
+  }
+
   Future<void> deleteExpense(ExpenseModel transaction) async {
     await transaction.delete();
     _transactions.remove(transaction);
@@ -203,6 +236,51 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     _subscriptions.add(sub);
     await _syncAutomatedLogs(isBackground: false);
     notifyListeners();
+  }
+
+  Future<void> updateSubscription(
+    SubscriptionModel sub, {
+    required double amount,
+    required String category,
+    required String paymentMethod,
+    required String note,
+    required int paymentDay,
+    required int paymentHour,
+    required int paymentMinute,
+  }) async {
+    sub.amount = amount;
+    sub.category = category;
+    sub.paymentMethod = paymentMethod;
+    sub.note = note;
+    sub.paymentDay = paymentDay;
+    sub.paymentHour = paymentHour;
+    sub.paymentMinute = paymentMinute;
+    await sub.save();
+    notifyListeners();
+  }
+
+  /// Returns true if a subscription looks like a duplicate of the one being
+  /// added/edited. Matches on name when a name is given; otherwise falls back
+  /// to the recurring-charge signature (amount + category + billing day) so
+  /// unnamed duplicates are still caught. Pass [excludeId] when editing.
+  bool isLikelyDuplicateSubscription({
+    required String note,
+    required double amount,
+    required String category,
+    required int paymentDay,
+    String? excludeId,
+  }) {
+    final name = note.trim().toLowerCase();
+    return _subscriptions.any((s) {
+      if (s.id == excludeId) return false;
+      if (name.isNotEmpty) {
+        return s.note.trim().toLowerCase() == name;
+      }
+      // No name to compare — treat same amount/category/day as a duplicate.
+      return s.amount == amount &&
+          s.category == category &&
+          s.paymentDay == paymentDay;
+    });
   }
 
   Future<void> deleteSubscription(SubscriptionModel sub) async {
@@ -284,6 +362,21 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     notifyListeners();
   }
 
+  Future<void> updateGoal(
+    GoalModel goal, {
+    required String name,
+    required double targetAmount,
+    required int colorValue,
+    required int iconCodePoint,
+  }) async {
+    goal.name = name;
+    goal.targetAmount = targetAmount;
+    goal.colorValue = colorValue;
+    goal.iconCodePoint = iconCodePoint;
+    await goal.save();
+    notifyListeners();
+  }
+
   Future<void> deleteGoal(GoalModel goal) async {
     await goal.delete();
     _goals.remove(goal);
@@ -314,6 +407,24 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     await box.add(emi);
     _emis.add(emi);
     await _syncAutomatedLogs(isBackground: false);
+    notifyListeners();
+  }
+
+  Future<void> updateEmi(
+    EmiModel emi, {
+    required String itemName,
+    required double totalAmount,
+    required int totalMonths,
+    required int paymentDay,
+    required String paymentMethod,
+  }) async {
+    emi.itemName = itemName;
+    emi.totalAmount = totalAmount;
+    emi.totalMonths = totalMonths;
+    emi.monthlyInstallment = totalMonths > 0 ? totalAmount / totalMonths : totalAmount;
+    emi.paymentDay = paymentDay;
+    emi.paymentMethod = paymentMethod;
+    await emi.save();
     notifyListeners();
   }
 
@@ -370,5 +481,86 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     _transactions = expenseBox.values.toList();
     _transactions.sort((a, b) => b.date.compareTo(a.date));
     notifyListeners();
+  }
+
+  // ─── Dashboard Analytics Helpers ─────────────────────────────
+
+  /// Total income for a specific month.
+  double getMonthlyIncome(int year, int month) {
+    return incomes
+        .where((t) => t.date.year == year && t.date.month == month)
+        .fold(0.0, (sum, t) => sum + t.amount);
+  }
+
+  /// Total expenses for a specific month.
+  double getMonthlyExpense(int year, int month) {
+    return expenses
+        .where((e) => e.date.year == year && e.date.month == month)
+        .fold(0.0, (sum, e) => sum + e.amount);
+  }
+
+  /// Spending for a single category in a specific month.
+  double getCategorySpendingForMonth(String category, int year, int month) {
+    return expenses
+        .where((e) =>
+            e.category == category &&
+            e.date.year == year &&
+            e.date.month == month)
+        .fold(0.0, (sum, e) => sum + e.amount);
+  }
+
+  /// Returns income & expense totals for the last [numMonths] months
+  /// (including the current month), ordered oldest-first.
+  List<Map<String, dynamic>> getMonthlyTrend(int numMonths) {
+    final now = DateTime.now();
+    final result = <Map<String, dynamic>>[];
+
+    for (int i = numMonths - 1; i >= 0; i--) {
+      final date = DateTime(now.year, now.month - i, 1);
+      result.add({
+        'year': date.year,
+        'month': date.month,
+        'income': getMonthlyIncome(date.year, date.month),
+        'expense': getMonthlyExpense(date.year, date.month),
+      });
+    }
+    return result;
+  }
+
+  /// Upcoming subscription and EMI bills for the rest of the current month,
+  /// sorted by payment day.
+  List<Map<String, dynamic>> getUpcomingBills() {
+    final now = DateTime.now();
+    final today = now.day;
+    final bills = <Map<String, dynamic>>[];
+
+    for (final sub in _subscriptions) {
+      if (sub.paymentDay >= today) {
+        bills.add({
+          'type': 'subscription',
+          'name': sub.note.isNotEmpty ? sub.note : sub.category,
+          'amount': sub.amount,
+          'dueDay': sub.paymentDay,
+          'category': sub.category,
+          'paymentMethod': sub.paymentMethod,
+        });
+      }
+    }
+
+    for (final emi in _emis) {
+      if (emi.paymentDay >= today && emi.monthsPaid < emi.totalMonths) {
+        bills.add({
+          'type': 'emi',
+          'name': emi.itemName,
+          'amount': emi.monthlyInstallment,
+          'dueDay': emi.paymentDay,
+          'category': 'Bills',
+          'paymentMethod': emi.paymentMethod,
+        });
+      }
+    }
+
+    bills.sort((a, b) => (a['dueDay'] as int).compareTo(b['dueDay'] as int));
+    return bills;
   }
 }

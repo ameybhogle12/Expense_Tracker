@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'home_screen.dart';
 import 'charts_screen.dart';
 import 'subscriptions_screen.dart';
@@ -7,6 +8,7 @@ import 'goals_screen.dart';
 import 'splits_screen.dart';
 import '../widgets/add_expense_form.dart';
 import '../widgets/spotlight_tour_overlay.dart';
+import '../widgets/onboarding_balance_sheet.dart';
 import '../providers/tour_provider.dart';
 
 class MainScreen extends StatefulWidget {
@@ -34,15 +36,31 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         _tourProvider = context.read<TourProvider>();
         _tourProvider?.registerKey('nav_bar', _navBarKey);
         _tourProvider?.registerKey('add_btn', _addBtnKey);
         _tourProvider?.addListener(_handleTourProgress);
-        
-        // Auto-trigger tour if it hasn't been completed yet
-        if (!_tourProvider!.isTourCompleted) {
+
+        // First launch: ask for starting wallet balances before anything else,
+        // so balances don't begin in the negative.
+        final settingsBox = Hive.box('settings_v1');
+        final onboarded = settingsBox.get('onboardingCompleted', defaultValue: false);
+        if (!onboarded && mounted) {
+          await showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            useSafeArea: true,
+            isDismissible: false,
+            enableDrag: false,
+            builder: (ctx) => const OnboardingBalanceSheet(),
+          );
+          await settingsBox.put('onboardingCompleted', true);
+        }
+
+        // Auto-trigger the guided tour if it hasn't been completed yet.
+        if (mounted && !_tourProvider!.isTourCompleted) {
           Future.delayed(const Duration(milliseconds: 600), () {
             if (mounted) {
               _tourProvider?.startTour();
@@ -50,7 +68,7 @@ class _MainScreenState extends State<MainScreen> {
           });
         }
       } catch (e) {
-        debugPrint("TourProvider not registered yet: $e");
+        debugPrint("Onboarding/Tour init error: $e");
       }
     });
   }

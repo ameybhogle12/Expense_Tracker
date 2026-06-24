@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/split_provider.dart';
+import '../providers/currency_provider.dart';
 import '../providers/tour_provider.dart';
 import '../models/split_trip_model.dart';
 import '../widgets/animations.dart';
@@ -34,6 +35,7 @@ class _SplitsScreenState extends State<SplitsScreen> {
     final provider = context.watch<SplitProvider>();
     final trips = provider.trips;
     final colorScheme = Theme.of(context).colorScheme;
+    final currencyProvider = context.watch<CurrencyProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -157,7 +159,7 @@ class _SplitsScreenState extends State<SplitsScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      '₹${total.toStringAsFixed(0)}',
+                                      currencyProvider.format(total),
                                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                               fontWeight: FontWeight.bold,
                                               color: colorScheme.primary,
