@@ -76,6 +76,25 @@ class _ChartsScreenState extends State<ChartsScreen> {
     });
   }
 
+  void _selectMonth() async {
+    final now = DateTime.now();
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime(_selectedYear, _selectedMonth),
+      firstDate: DateTime(now.year - 5),
+      lastDate: now,
+      initialDatePickerMode: DatePickerMode.year,
+      helpText: 'Select Year & Month',
+    );
+    if (picked != null) {
+      setState(() {
+        _activePreset = _FilterPreset.thisMonth;
+        _selectedYear = picked.year;
+        _selectedMonth = picked.month;
+      });
+    }
+  }
+
   int get _trendMonths {
     switch (_activePreset) {
       case _FilterPreset.last3Months:
@@ -108,7 +127,9 @@ class _ChartsScreenState extends State<ChartsScreen> {
         provider.getMonthlyExpense(prevDate.year, prevDate.month);
 
     // Trend data
-    final trendData = provider.getMonthlyTrend(_trendMonths);
+    final trendData = (_activePreset == _FilterPreset.thisMonth || _activePreset == _FilterPreset.lastMonth)
+        ? provider.getDailyTrend(_selectedYear, _selectedMonth)
+        : provider.getMonthlyTrend(_trendMonths);
 
     final monthLabel = DateFormat.yMMMM()
         .format(DateTime(_selectedYear, _selectedMonth));
@@ -192,10 +213,28 @@ class _ChartsScreenState extends State<ChartsScreen> {
               ),
             ),
           ),
-          Text(
-            monthLabel,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
+          InkWell(
+            onTap: _selectMonth,
+            borderRadius: BorderRadius.circular(8),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today_rounded,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    monthLabel,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           IconButton(
@@ -204,8 +243,8 @@ class _ChartsScreenState extends State<ChartsScreen> {
             iconSize: 28,
             style: IconButton.styleFrom(
               backgroundColor: isCurrentMonth
-                  ? null
-                  : theme.colorScheme.primary.withOpacity(0.08),
+                ? null
+                : theme.colorScheme.primary.withOpacity(0.08),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),

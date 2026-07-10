@@ -22,6 +22,7 @@ import 'providers/tour_provider.dart';
 import 'providers/currency_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/auth_wrapper.dart';
+import 'screens/splash_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
 
@@ -149,7 +150,7 @@ class MyApp extends StatelessWidget {
             ),
             useMaterial3: true,
           ),
-          home: const AuthWrapper(),
+          home: const SplashScreen(),
         );
       },
     );

@@ -991,4 +991,21 @@ class AppLocalizationsJa extends AppLocalizations {
   String deleteWalletWarning(String count) {
     return 'このウォレットにリンクされた $count 件の取引もすべて削除されます。この操作は元に戻せません。';
   }
+
+  @override
+  String get autoLogging => '自動入力ロガー';
+
+  @override
+  String get autoLoggingDesc => 'AIを使用してUPIや銀行の通知を読み取り、支出を自動で記録します';
+
+  @override
+  String get autoLoggingNotificationAccess => '通知へのアクセスが必要です';
+
+  @override
+  String get addCategoryInline => '+ カテゴリーを追加';
+
+  @override
+  String categoryAddedToast(String name) {
+    return 'カテゴリー「$name」が追加されました！編集・削除は設定から行えます。';
+  }
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
+import '../models/wallet_model.dart';
 import '../screens/manage_wallets_screen.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
 
@@ -13,7 +14,6 @@ class DashboardHeader extends StatefulWidget {
 }
 
 class _DashboardHeaderState extends State<DashboardHeader> {
-  static const double _cardExtent = 145 + 12; // card width + right margin
   final ScrollController _scrollController = ScrollController();
   int _activeIndex = 0;
 
@@ -25,7 +25,19 @@ class _DashboardHeaderState extends State<DashboardHeader> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final index = (_scrollController.offset / _cardExtent).round();
+    
+    final maxExtent = _scrollController.position.maxScrollExtent;
+    if (maxExtent <= 0) {
+      if (_activeIndex != 0) setState(() => _activeIndex = 0);
+      return;
+    }
+
+    final walletsCount = context.read<ExpenseProvider>().wallets.length;
+    if (walletsCount <= 1) return;
+
+    final double scrollPercentage = (_scrollController.offset / maxExtent).clamp(0.0, 1.0);
+    final index = (scrollPercentage * (walletsCount - 1)).round();
+    
     if (index != _activeIndex) {
       setState(() => _activeIndex = index);
     }
@@ -36,6 +48,107 @@ class _DashboardHeaderState extends State<DashboardHeader> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _showAddWalletDialog(BuildContext context) {
+    final nameController = TextEditingController();
+    final balanceController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final currencyProvider = context.read<CurrencyProvider>();
+    final l10n = AppLocalizations.of(context)!;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.account_balance_wallet, color: Colors.deepPurple),
+            const SizedBox(width: 12),
+            Text(l10n.createWallet, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: l10n.walletName,
+                  hintText: l10n.walletNameHint,
+                  border: const OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return l10n.pleaseEnterWalletName;
+                  }
+                  final provider = context.read<ExpenseProvider>();
+                  if (provider.wallets.any((w) => w.name.toLowerCase() == value.trim().toLowerCase())) {
+                    return l10n.walletNameExists;
+                  }
+                  return null;
+                },
+                autofocus: true,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: balanceController,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                decoration: InputDecoration(
+                  labelText: l10n.startingBalanceOptional,
+                  prefixText: '${currencyProvider.code} ${currencyProvider.symbol} ',
+                  hintText: '0',
+                  border: const OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value != null && value.trim().isNotEmpty) {
+                    final amount = double.tryParse(value);
+                    if (amount == null || amount < 0) {
+                      return l10n.pleaseEnterValidBalance;
+                    }
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(l10n.cancel),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState!.validate()) {
+                final name = nameController.text.trim();
+                final balanceStr = balanceController.text.trim();
+                final balance = balanceStr.isNotEmpty ? double.parse(balanceStr) : 0.0;
+
+                final provider = context.read<ExpenseProvider>();
+                final newWallet = WalletModel(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  name: name,
+                );
+
+                provider.addWallet(newWallet, initialBalance: balance);
+                Navigator.of(context).pop();
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(l10n.walletCreated(name)),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: Text(l10n.create),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -68,31 +181,34 @@ class _DashboardHeaderState extends State<DashboardHeader> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Text(
-                    l10n.myWallets,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: onContainer,
-                        ),
-                  ),
-                  if (wallets.length > 1) ...[
-                    const SizedBox(width: 6),
-                    Icon(Icons.swipe, size: 16, color: onContainer.withOpacity(0.7)),
-                  ],
-                ],
+              Text(
+                l10n.myWallets,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: onContainer,
+                    ),
               ),
-              IconButton(
-                icon: const Icon(Icons.edit_note, size: 20),
-                tooltip: l10n.manageWallets,
-                color: onContainer,
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ManageWalletsScreen()),
-                  );
-                },
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, size: 20),
+                    tooltip: l10n.addWallet,
+                    color: onContainer,
+                    onPressed: () => _showAddWalletDialog(context),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.edit_note, size: 20),
+                    tooltip: l10n.manageWallets,
+                    color: onContainer,
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ManageWalletsScreen()),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),

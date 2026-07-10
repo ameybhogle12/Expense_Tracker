@@ -54,6 +54,54 @@ class LogProcessor {
       // Don't interrupt background processing if reminder fails
     }
 
+    // Upcoming Subscription Reminders check
+    try {
+      final settingsBox = await Hive.openBox('settings_v1');
+      for (var sub in subscriptionBox.values) {
+        final lastDayThisMonth = DateTime(now.year, now.month + 1, 0).day;
+        final clampedDayThisMonth = sub.paymentDay > lastDayThisMonth ? lastDayThisMonth : sub.paymentDay;
+        final paymentThisMonth = DateTime(now.year, now.month, clampedDayThisMonth, sub.paymentHour, sub.paymentMinute);
+        
+        DateTime nextPaymentDate;
+        if (now.isAfter(paymentThisMonth)) {
+          int nextMonth = now.month + 1;
+          int nextYear = now.year;
+          if (nextMonth > 12) {
+            nextMonth = 1;
+            nextYear++;
+          }
+          final lastDayNextMonth = DateTime(nextYear, nextMonth + 1, 0).day;
+          final clampedDayNextMonth = sub.paymentDay > lastDayNextMonth ? lastDayNextMonth : sub.paymentDay;
+          nextPaymentDate = DateTime(nextYear, nextMonth, clampedDayNextMonth, sub.paymentHour, sub.paymentMinute);
+        } else {
+          nextPaymentDate = paymentThisMonth;
+        }
+
+        final difference = nextPaymentDate.difference(now);
+        if (difference.inHours > 0 && difference.inHours <= 48) {
+          final reminderKey = 'upcoming_reminder_${sub.id}_${nextPaymentDate.year}_${nextPaymentDate.month}';
+          final alreadySent = settingsBox.get(reminderKey) ?? false;
+          if (!alreadySent) {
+            String timeLabel;
+            if (difference.inHours <= 12) {
+              timeLabel = 'today';
+            } else if (difference.inHours <= 36) {
+              timeLabel = 'tomorrow';
+            } else {
+              timeLabel = 'in 2 days';
+            }
+            await NotificationService().showNotification(
+              title: '📅 Upcoming Subscription',
+              body: 'Your subscription for "${sub.note.isNotEmpty ? sub.note : sub.category}" is due $timeLabel on the ${sub.paymentDay}th.',
+            );
+            await settingsBox.put(reminderKey, true);
+          }
+        }
+      }
+    } catch (e) {
+      // Don't interrupt background processing if upcoming reminder fails
+    }
+
     // Process Subscriptions
     for (var sub in subscriptionBox.values) {
       if (now.day >= sub.paymentDay) {

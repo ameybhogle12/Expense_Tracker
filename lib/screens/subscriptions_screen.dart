@@ -4,6 +4,7 @@ import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import '../models/subscription_model.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
+import 'subscription_history_screen.dart';
 
 class SubscriptionsScreen extends StatelessWidget {
   const SubscriptionsScreen({super.key});
@@ -103,7 +104,14 @@ class SubscriptionsScreen extends StatelessWidget {
                     },
                     child: ListTile(
                       contentPadding: EdgeInsets.zero,
-                      onTap: () => _showActions(context, sub),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => SubscriptionHistoryScreen(subscription: sub),
+                          ),
+                        );
+                      },
                       leading: CircleAvatar(
                         backgroundColor: color.withOpacity(0.2),
                         child: Icon(catObj != null ? IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons') : Icons.subscriptions, color: color),
@@ -114,8 +122,12 @@ class SubscriptionsScreen extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(currencyProvider.format(sub.amount), style: const TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                          IconButton(
+                            icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                            onPressed: () => _showActions(context, sub),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
                         ],
                       ),
                     ),

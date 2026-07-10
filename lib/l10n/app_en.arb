@@ -570,5 +570,12 @@
     "placeholders": {
       "count": { "type": "String" }
     }
+  },
+  "addCategoryInline": "+ Add Category",
+  "categoryAddedToast": "Category \"{name}\" added! To edit or delete, go to Settings.",
+  "@categoryAddedToast": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
   }
 }

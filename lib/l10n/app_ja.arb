@@ -292,5 +292,7 @@
   "adjustBalanceHint": "現在の残高を維持する場合は空欄のまま",
   "newBalance": "新しい残高",
   "balanceAdjusted": "{walletName} の残高が調整されました",
-  "deleteWalletWarning": "このウォレットにリンクされた {count} 件の取引もすべて削除されます。この操作は元に戻せません。"
+  "deleteWalletWarning": "このウォレットにリンクされた {count} 件の取引もすべて削除されます。この操作は元に戻せません。",
+  "addCategoryInline": "+ カテゴリーを追加",
+  "categoryAddedToast": "カテゴリー「{name}」が追加されました！編集・削除は設定から行えます。"
 }

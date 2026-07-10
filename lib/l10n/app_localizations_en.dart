@@ -1042,4 +1042,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String deleteWalletWarning(String count) {
     return 'This will also delete all $count transaction(s) linked to this wallet. This cannot be undone.';
   }
+
+  @override
+  String get autoLogging => 'Auto-Magic Logger';
+
+  @override
+  String get autoLoggingDesc =>
+      'Automatically read UPI/Bank notifications to log expenses with AI';
+
+  @override
+  String get autoLoggingNotificationAccess => 'Notification Access Required';
+
+  @override
+  String get addCategoryInline => '+ Add Category';
+
+  @override
+  String categoryAddedToast(String name) {
+    return 'Category \"$name\" added! To edit or delete, go to Settings.';
+  }
 }
