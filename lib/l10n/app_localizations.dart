@@ -1844,24 +1844,6 @@ abstract class AppLocalizations {
   /// **'This will also delete all {count} transaction(s) linked to this wallet. This cannot be undone.'**
   String deleteWalletWarning(String count);
 
-  /// No description provided for @autoLogging.
-  ///
-  /// In en, this message translates to:
-  /// **'Auto-Magic Logger'**
-  String get autoLogging;
-
-  /// No description provided for @autoLoggingDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Automatically read UPI/Bank notifications to log expenses with AI'**
-  String get autoLoggingDesc;
-
-  /// No description provided for @autoLoggingNotificationAccess.
-  ///
-  /// In en, this message translates to:
-  /// **'Notification Access Required'**
-  String get autoLoggingNotificationAccess;
-
   /// No description provided for @addCategoryInline.
   ///
   /// In en, this message translates to:

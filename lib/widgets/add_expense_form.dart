@@ -24,6 +24,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
   DateTime _selectedDate = DateTime.now();
   String? _selectedCategory;
   TransactionType _transactionType = TransactionType.expense;
+  final _categoryDropdownKey = GlobalKey<FormFieldState<String>>();
 
   late String _paymentMethod;
   late String _transferToWallet;
@@ -169,7 +170,12 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  onPressed: () {
+                    final provider = context.read<ExpenseProvider>();
+                    final prevVal = _selectedCategory ?? (provider.categories.isNotEmpty ? provider.categories.first.name : null);
+                    _categoryDropdownKey.currentState?.didChange(prevVal);
+                    Navigator.of(dialogContext).pop();
+                  },
                   child: Text(l10n.cancel),
                 ),
                 ElevatedButton(
@@ -194,21 +200,25 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                       isCustom: true,
                     );
 
-                    provider.addCategory(newCategory);
+                    // Pop dialog first to avoid route conflicts during rebuild
                     Navigator.of(dialogContext).pop();
 
-                    // Auto-select the new category and show toast
-                    setState(() {
-                      _selectedCategory = name;
-                    });
+                    // Defer all state changes until the dialog route is fully dismissed
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      setState(() {
+                        _selectedCategory = name;
+                      });
+                      provider.addCategory(newCategory);
+                      _categoryDropdownKey.currentState?.didChange(name);
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.categoryAddedToast(name)),
-                        behavior: SnackBarBehavior.floating,
-                        duration: const Duration(seconds: 4),
-                      ),
-                    );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.categoryAddedToast(name)),
+                          behavior: SnackBarBehavior.floating,
+                          duration: const Duration(seconds: 4),
+                        ),
+                      );
+                    });
                   },
                   child: Text(l10n.create),
                 ),
@@ -431,6 +441,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                         final currentValue = _selectedCategory ?? categories.first.name;
 
                         return DropdownButtonFormField<String>(
+                          key: _categoryDropdownKey,
                           value: currentValue,
                           decoration: InputDecoration(
                             labelText: l10n.category,
@@ -474,7 +485,9 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                           onChanged: (value) {
                             if (value == null) return;
                             if (value == '__add_new_category__') {
-                              _showQuickAddCategoryDialog();
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                _showQuickAddCategoryDialog();
+                              });
                               return;
                             }
                             setState(() {

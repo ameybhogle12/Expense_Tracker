@@ -993,15 +993,6 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
-  String get autoLogging => '自動入力ロガー';
-
-  @override
-  String get autoLoggingDesc => 'AIを使用してUPIや銀行の通知を読み取り、支出を自動で記録します';
-
-  @override
-  String get autoLoggingNotificationAccess => '通知へのアクセスが必要です';
-
-  @override
   String get addCategoryInline => '+ カテゴリーを追加';
 
   @override

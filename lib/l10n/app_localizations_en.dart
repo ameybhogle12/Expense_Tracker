@@ -1044,16 +1044,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get autoLogging => 'Auto-Magic Logger';
-
-  @override
-  String get autoLoggingDesc =>
-      'Automatically read UPI/Bank notifications to log expenses with AI';
-
-  @override
-  String get autoLoggingNotificationAccess => 'Notification Access Required';
-
-  @override
   String get addCategoryInline => '+ Add Category';
 
   @override
