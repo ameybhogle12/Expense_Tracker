@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/expense_model.dart';
+import '../models/category_model.dart';
 import '../providers/expense_provider.dart';
 import '../providers/currency_provider.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
@@ -78,6 +79,145 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
         _selectedDate = pickedDate;
       });
     }
+  }
+
+  void _showQuickAddCategoryDialog() {
+    final nameController = TextEditingController();
+    final l10n = AppLocalizations.of(context)!;
+
+    final List<Color> vibrantColors = [
+      Colors.red, Colors.pink, Colors.purple, Colors.deepPurple,
+      Colors.indigo, Colors.blue, Colors.lightBlue, Colors.cyan,
+      Colors.teal, Colors.green, Colors.lightGreen, Colors.lime,
+      Colors.orange, Colors.deepOrange, Colors.brown, Colors.blueGrey,
+    ];
+
+    final List<IconData> curatedIcons = [
+      Icons.shopping_cart, Icons.fastfood, Icons.local_cafe, Icons.flight,
+      Icons.directions_car, Icons.train, Icons.hotel, Icons.local_hospital,
+      Icons.fitness_center, Icons.sports_esports, Icons.movie, Icons.music_note,
+      Icons.pets, Icons.school, Icons.work, Icons.home,
+      Icons.build, Icons.auto_awesome, Icons.favorite, Icons.star,
+    ];
+
+    Color selectedColor = vibrantColors[0];
+    IconData selectedIcon = curatedIcons[0];
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            return AlertDialog(
+              title: Text(l10n.createCategory),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: InputDecoration(
+                        labelText: l10n.categoryName,
+                        border: const OutlineInputBorder(),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                      autofocus: true,
+                    ),
+                    const SizedBox(height: 20),
+                    Text(l10n.selectColor, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: vibrantColors.map((color) {
+                        final isSelected = selectedColor == color;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedColor = color),
+                          child: CircleAvatar(
+                            backgroundColor: color,
+                            radius: 16,
+                            child: isSelected ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(l10n.selectIcon, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: curatedIcons.map((icon) {
+                        final isSelected = selectedIcon == icon;
+                        return GestureDetector(
+                          onTap: () => setDialogState(() => selectedIcon = icon),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? selectedColor.withOpacity(0.2) : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isSelected ? selectedColor : Colors.grey.shade300),
+                            ),
+                            child: Icon(icon, color: isSelected ? selectedColor : Colors.grey),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(l10n.cancel),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    final name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.pleaseEnterName)));
+                      return;
+                    }
+
+                    final provider = context.read<ExpenseProvider>();
+                    if (provider.getCategoryByName(name) != null) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.categoryAlreadyExists)));
+                      return;
+                    }
+
+                    final newCategory = CategoryModel(
+                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      name: name,
+                      colorValue: selectedColor.value,
+                      iconCodePoint: selectedIcon.codePoint,
+                      isCustom: true,
+                    );
+
+                    provider.addCategory(newCategory);
+                    Navigator.of(dialogContext).pop();
+
+                    // Auto-select the new category and show toast
+                    setState(() {
+                      _selectedCategory = name;
+                    });
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(l10n.categoryAddedToast(name)),
+                        behavior: SnackBarBehavior.floating,
+                        duration: const Duration(seconds: 4),
+                      ),
+                    );
+                  },
+                  child: Text(l10n.create),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
   }
 
   void _submitData() async {
@@ -220,7 +360,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                 ),
                 segments: [
                   ButtonSegment(value: TransactionType.expense, label: Text(l10n.expense), icon: const Icon(Icons.money_off, size: 16)),
-                  ButtonSegment(value: TransactionType.income, label: Text(l10n.income), icon: const Icon(Icons.attach_money, size: 16)),
+                  ButtonSegment(value: TransactionType.income, label: Text(l10n.income), icon: Text(currencyProvider.symbol, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                   ButtonSegment(value: TransactionType.transfer, label: Text(l10n.transfer), icon: const Icon(Icons.swap_horiz, size: 16)),
                 ],
                 selected: {_transactionType},
@@ -281,37 +421,67 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               Row(
                 children: [
                   Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedCategory ?? context.watch<ExpenseProvider>().categories.first.name,
-                      decoration: InputDecoration(
-                        labelText: l10n.category,
-                        border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                      ),
-                      isExpanded: true,
-                      items: context.watch<ExpenseProvider>().categories.map((catObj) {
-                        return DropdownMenuItem(
-                          value: catObj.name,
-                          child: Row(
-                            children: [
-                              Icon(IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons'), size: 16),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  catObj.name, 
-                                  style: const TextStyle(fontSize: 13),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                    child: Consumer<ExpenseProvider>(
+                      builder: (context, provider, _) {
+                        final categories = provider.categories;
+                        // Ensure selected category is still valid
+                        if (_selectedCategory != null && !categories.any((c) => c.name == _selectedCategory)) {
+                          _selectedCategory = null;
+                        }
+                        final currentValue = _selectedCategory ?? categories.first.name;
+
+                        return DropdownButtonFormField<String>(
+                          value: currentValue,
+                          decoration: InputDecoration(
+                            labelText: l10n.category,
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                           ),
+                          isExpanded: true,
+                          items: [
+                            ...categories.map((catObj) {
+                              return DropdownMenuItem(
+                                value: catObj.name,
+                                child: Row(
+                                  children: [
+                                    Icon(IconData(catObj.iconCodePoint, fontFamily: 'MaterialIcons'), size: 16),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        catObj.name,
+                                        style: const TextStyle(fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }),
+                            DropdownMenuItem(
+                              value: '__add_new_category__',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.add_circle_outline, size: 16, color: Theme.of(context).colorScheme.primary),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    l10n.addCategoryInline,
+                                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            if (value == null) return;
+                            if (value == '__add_new_category__') {
+                              _showQuickAddCategoryDialog();
+                              return;
+                            }
+                            setState(() {
+                              _selectedCategory = value;
+                            });
+                          },
                         );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value == null) return;
-                        setState(() {
-                          _selectedCategory = value;
-                        });
                       },
                     ),
                   ),

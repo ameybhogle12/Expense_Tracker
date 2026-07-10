@@ -30,7 +30,11 @@ class IncomeExpenseChart extends StatelessWidget {
       if (inc > maxY) maxY = inc;
       if (exp > maxY) maxY = exp;
     }
-    maxY = maxY == 0 ? 10000 : maxY * 1.2;
+    if (maxY == 0) {
+      maxY = 100;
+    } else {
+      maxY = maxY * 1.2;
+    }
 
     final incomeSpots = <FlSpot>[];
     final expenseSpots = <FlSpot>[];
@@ -101,18 +105,27 @@ class IncomeExpenseChart extends StatelessWidget {
                       if (idx < 0 || idx >= trendData.length) {
                         return const SizedBox.shrink();
                       }
-                      final month = trendData[idx]['month'] as int;
-                      final monthName = DateFormat.MMM()
-                          .format(DateTime(2026, month));
+                      
+                      final isDaily = trendData[idx].containsKey('day');
+                      String label;
+                      if (isDaily) {
+                        final day = trendData[idx]['day'] as int;
+                        // Only show specific days to avoid crowding
+                        if (day % 5 != 1 && day != trendData.length) return const SizedBox.shrink();
+                        label = day.toString();
+                      } else {
+                        final month = trendData[idx]['month'] as int;
+                        label = DateFormat.MMM().format(DateTime(2026, month));
+                      }
+                      
                       return Padding(
                         padding: const EdgeInsets.only(top: 8),
                         child: Text(
-                          monthName,
+                          label,
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color:
-                                theme.colorScheme.onSurface.withOpacity(0.6),
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                           ),
                         ),
                       );

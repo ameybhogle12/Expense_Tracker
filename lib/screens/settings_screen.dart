@@ -15,6 +15,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
 import '../providers/locale_provider.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
+import 'package:notification_listener_service/notification_listener_service.dart';
+import '../services/notification_tracker.dart';
+
 
 
 class SettingsScreen extends StatefulWidget {
@@ -24,14 +27,72 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
   late bool _useBiometrics;
+  bool _autoLoggingEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final box = Hive.box('settings_v1');
     _useBiometrics = box.get('useBiometrics', defaultValue: false);
+    _checkNotificationPermission();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkNotificationPermission();
+    }
+  }
+
+  Future<void> _checkNotificationPermission() async {
+    if (!kIsWeb) {
+      final granted = await NotificationListenerService.isPermissionGranted();
+      final box = Hive.box('settings_v1');
+      final enabled = box.get('auto_logging_enabled', defaultValue: false) as bool;
+      if (enabled && !granted) {
+        await box.put('auto_logging_enabled', false);
+        NotificationTracker().stopListening();
+        setState(() {
+          _autoLoggingEnabled = false;
+        });
+      } else {
+        setState(() {
+          _autoLoggingEnabled = enabled && granted;
+        });
+      }
+    }
+  }
+
+  void _toggleAutoLogging(bool value) async {
+    if (value) {
+      final granted = await NotificationListenerService.isPermissionGranted();
+      if (!granted) {
+        await NotificationListenerService.requestPermission();
+        return;
+      }
+      final box = Hive.box('settings_v1');
+      await box.put('auto_logging_enabled', true);
+      NotificationTracker().startListening();
+      setState(() {
+        _autoLoggingEnabled = true;
+      });
+    } else {
+      final box = Hive.box('settings_v1');
+      await box.put('auto_logging_enabled', false);
+      NotificationTracker().stopListening();
+      setState(() {
+        _autoLoggingEnabled = false;
+      });
+    }
   }
 
   void _toggleBiometrics(bool value) async {
@@ -130,6 +191,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               value: _useBiometrics,
               onChanged: _toggleBiometrics,
               secondary: const Icon(Icons.security),
+            ),
+            const Divider(),
+            SwitchListTile(
+              title: Text(l10n.autoLogging),
+              subtitle: Text(l10n.autoLoggingDesc),
+              value: _autoLoggingEnabled,
+              onChanged: _toggleAutoLogging,
+              secondary: const Icon(Icons.auto_awesome),
             ),
             const Divider(),
           ],

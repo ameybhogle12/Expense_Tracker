@@ -570,5 +570,15 @@
     "placeholders": {
       "count": { "type": "String" }
     }
+  },
+  "autoLogging": "Auto-Magic Logger",
+  "autoLoggingDesc": "Automatically read UPI/Bank notifications to log expenses with AI",
+  "autoLoggingNotificationAccess": "Notification Access Required",
+  "addCategoryInline": "+ Add Category",
+  "categoryAddedToast": "Category \"{name}\" added! To edit or delete, go to Settings.",
+  "@categoryAddedToast": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
   }
 }

@@ -5,6 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'services/notification_service.dart';
 import 'services/log_processor.dart';
+import 'services/notification_tracker.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 
 import 'models/expense_model.dart';
 import 'models/budget_model.dart';
@@ -22,6 +25,7 @@ import 'providers/tour_provider.dart';
 import 'providers/currency_provider.dart';
 import 'providers/locale_provider.dart';
 import 'screens/auth_wrapper.dart';
+import 'screens/splash_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
 
@@ -29,6 +33,7 @@ import 'package:expense_tracker/l10n/app_localizations.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
+      await dotenv.load(fileName: ".env");
       await Hive.initFlutter();
       // Register all adapters again for the background isolate
       if (!Hive.isAdapterRegistered(0))
@@ -56,6 +61,7 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
 
   if (!kIsWeb) {
@@ -98,8 +104,15 @@ void main() async {
   await Hive.openBox<SplitTripModel>(SplitProvider.tripBoxName);
   await Hive.openBox<SplitExpenseModel>(SplitProvider.expenseBoxName);
   await Hive.openBox<WalletModel>(ExpenseProvider.walletBoxName);
-  await Hive.openBox('settings_v1');
+  final settingsBox = await Hive.openBox('settings_v1');
   await Hive.openBox('feedback_v1');
+
+  if (!kIsWeb) {
+    final autoLoggingEnabled = settingsBox.get('auto_logging_enabled', defaultValue: false) as bool;
+    if (autoLoggingEnabled) {
+      NotificationTracker().startListening();
+    }
+  }
 
   runApp(
     MultiProvider(
@@ -149,7 +162,7 @@ class MyApp extends StatelessWidget {
             ),
             useMaterial3: true,
           ),
-          home: const AuthWrapper(),
+          home: const SplashScreen(),
         );
       },
     );

@@ -45,3 +45,6 @@ app.*.map.json
 # Private signing files
 **/android/key.properties
 **/android/app/upload-keystore.jks
+
+# Environment variables
+.env

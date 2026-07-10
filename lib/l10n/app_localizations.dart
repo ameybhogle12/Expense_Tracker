@@ -1843,6 +1843,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This will also delete all {count} transaction(s) linked to this wallet. This cannot be undone.'**
   String deleteWalletWarning(String count);
+
+  /// No description provided for @autoLogging.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-Magic Logger'**
+  String get autoLogging;
+
+  /// No description provided for @autoLoggingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically read UPI/Bank notifications to log expenses with AI'**
+  String get autoLoggingDesc;
+
+  /// No description provided for @autoLoggingNotificationAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification Access Required'**
+  String get autoLoggingNotificationAccess;
+
+  /// No description provided for @addCategoryInline.
+  ///
+  /// In en, this message translates to:
+  /// **'+ Add Category'**
+  String get addCategoryInline;
+
+  /// No description provided for @categoryAddedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Category \"{name}\" added! To edit or delete, go to Settings.'**
+  String categoryAddedToast(String name);
 }
 
 class _AppLocalizationsDelegate

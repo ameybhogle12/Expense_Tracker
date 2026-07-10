@@ -560,6 +560,30 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     return result;
   }
 
+  /// Returns daily income & expense totals for a specific month.
+  List<Map<String, dynamic>> getDailyTrend(int year, int month) {
+    final daysInMonth = DateTime(year, month + 1, 0).day;
+    final result = <Map<String, dynamic>>[];
+
+    for (int i = 1; i <= daysInMonth; i++) {
+      final dailyIncome = incomes
+          .where((t) => t.date.year == year && t.date.month == month && t.date.day == i)
+          .fold(0.0, (sum, t) => sum + t.amount);
+      final dailyExpense = expenses
+          .where((t) => t.date.year == year && t.date.month == month && t.date.day == i)
+          .fold(0.0, (sum, t) => sum + t.amount);
+      
+      result.add({
+        'year': year,
+        'month': month,
+        'day': i,
+        'income': dailyIncome,
+        'expense': dailyExpense,
+      });
+    }
+    return result;
+  }
+
   /// Upcoming subscription and EMI bills for the rest of the current month,
   /// sorted by payment day.
   List<Map<String, dynamic>> getUpcomingBills() {
