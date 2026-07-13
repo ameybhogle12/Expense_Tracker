@@ -1,6 +1,6 @@
 # Trip & Track: App Progress & Developer Log
 
-## 📱 Current Features (v1.0.3 - Free for all users)
+## 📱 Current Features (v1.0.5 - Free for all users)
 *   **Wallets:** Unlimited Wallets.
 *   **Categories:** Unlimited Categories.
 *   **Subscriptions:** Unlimited Subscription tracking with automatic background logging.
@@ -8,6 +8,7 @@
 *   **Goals & EMIs:** Track saving goals and upcoming EMI payments.
 *   **Security:** Screenshot App Lock.
 *   **Dashboard:** Advanced interactive Donut Charts and Line Charts for tracking expenses.
+*   **Smart Spending Insights:** Daily push notifications with budget alerts (80%/100% threshold) and pattern-based insights (weekly spike, top category, monthly pace). Runs after 6 PM via Workmanager background task.
 
 ## 🚀 PlayStore Strategy
 *   **Version 1 (Initial Release):** 100% Free for all users to build a strong user base and ensure high retention.

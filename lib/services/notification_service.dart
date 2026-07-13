@@ -7,6 +7,8 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
+  static int _insightNotificationId = 1000;
+
   Future<void> init() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/launcher_icon');
@@ -19,22 +21,30 @@ class NotificationService {
       settings: initializationSettings,
     );
 
-    // Create a channel for Android 8.0+
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    // Channel for automated subscription/EMI logs
+    const AndroidNotificationChannel logsChannel = AndroidNotificationChannel(
       'expense_tracker_logs',
       'Automated Logs',
       description: 'Notifications for automated subscription and EMI logs.',
       importance: Importance.high,
     );
 
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+    // Channel for spending insight notifications
+    const AndroidNotificationChannel insightsChannel = AndroidNotificationChannel(
+      'spending_insights',
+      'Spending Insights',
+      description: 'Smart spending alerts and budget warnings.',
+      importance: Importance.high,
+    );
+
+    final androidPlugin = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.createNotificationChannel(logsChannel);
+    await androidPlugin?.createNotificationChannel(insightsChannel);
 
     // Request notification permission for Android 13+
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    await androidPlugin?.requestNotificationsPermission();
   }
 
   Future<void> showNotification({required String title, required String body}) async {
@@ -59,4 +69,27 @@ class NotificationService {
       notificationDetails: platformChannelSpecifics,
     );
   }
+
+  Future<void> showInsightNotification({required String title, required String body}) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'spending_insights',
+      'Spending Insights',
+      channelDescription: 'Smart spending alerts and budget warnings.',
+      importance: Importance.high,
+      priority: Priority.high,
+      ticker: 'spending insight',
+    );
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await _notificationsPlugin.show(
+      id: _insightNotificationId++,
+      title: title,
+      body: body,
+      notificationDetails: notificationDetails,
+    );
+  }
 }
+

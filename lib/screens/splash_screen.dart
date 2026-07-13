@@ -13,8 +13,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Play the splash animation for 5 seconds, then transition to AuthWrapper
-    Timer(const Duration(seconds: 5), () {
+    // Play the splash animation for 4 seconds, then transition to AuthWrapper
+    Timer(const Duration(seconds: 4), () {
       if (mounted) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
