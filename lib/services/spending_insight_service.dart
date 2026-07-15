@@ -22,18 +22,21 @@ class SpendingInsightService {
   };
 
   /// Main entry point — called from LogProcessor.processAll().
-  static Future<void> checkAndNotify() async {
+  /// Returns [true] if an insight was generated and notified, [false] otherwise.
+  static Future<bool> checkAndNotify({bool force = false}) async {
     try {
       final settingsBox = await Hive.openBox('settings_v1');
       final now = DateTime.now();
       final todayStr = "${now.year}-${now.month}-${now.day}";
 
       // Only send one insight per day
-      final lastInsightDate = settingsBox.get('lastInsightSentDate');
-      if (lastInsightDate == todayStr) return;
+      if (!force) {
+        final lastInsightDate = settingsBox.get('lastInsightSentDate');
+        if (lastInsightDate == todayStr) return false;
 
-      // Only send insights after 6 PM for a natural "end of day recap" feel
-      if (now.hour < 18) return;
+        // Only send insights after 6 PM for a natural "end of day recap" feel
+        if (now.hour < 18) return false;
+      }
 
       final expenseBox = await Hive.openBox<ExpenseModel>(ExpenseProvider.expenseBoxName);
       final budgetBox = await Hive.openBox<BudgetModel>(ExpenseProvider.budgetBoxName);
@@ -50,7 +53,7 @@ class SpendingInsightService {
           .where((e) => e.date.year == now.year && e.date.month == now.month)
           .toList();
 
-      if (monthExpenses.isEmpty) return; // No spending data, no insight
+      if (monthExpenses.isEmpty) return false; // No spending data, no insight
 
       // --- TIER 1: Budget Alerts (highest priority) ---
       final budgetInsight = _checkBudgets(monthExpenses, budgets, currencySymbol);
@@ -59,8 +62,10 @@ class SpendingInsightService {
           title: budgetInsight.title,
           body: budgetInsight.body,
         );
-        await settingsBox.put('lastInsightSentDate', todayStr);
-        return;
+        if (!force) {
+          await settingsBox.put('lastInsightSentDate', todayStr);
+        }
+        return true;
       }
 
       // --- TIER 2: Smart Pattern Insights ---
@@ -70,10 +75,15 @@ class SpendingInsightService {
           title: patternInsight.title,
           body: patternInsight.body,
         );
-        await settingsBox.put('lastInsightSentDate', todayStr);
+        if (!force) {
+          await settingsBox.put('lastInsightSentDate', todayStr);
+        }
+        return true;
       }
+      return false;
     } catch (e) {
       // Never crash the background processor
+      return false;
     }
   }
 

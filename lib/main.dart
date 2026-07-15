@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'services/notification_service.dart';
 import 'services/log_processor.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'models/expense_model.dart';
 import 'models/budget_model.dart';
@@ -30,6 +31,7 @@ import 'package:expense_tracker/l10n/app_localizations.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
+      await dotenv.load(fileName: ".env");
       await Hive.initFlutter();
       // Register all adapters again for the background isolate
       if (!Hive.isAdapterRegistered(0))
@@ -57,6 +59,7 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   await Hive.initFlutter();
 
   if (!kIsWeb) {

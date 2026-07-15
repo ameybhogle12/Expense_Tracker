@@ -9,6 +9,8 @@
 *   **Security:** Screenshot App Lock.
 *   **Dashboard:** Advanced interactive Donut Charts and Line Charts for tracking expenses.
 *   **Smart Spending Insights:** Daily push notifications with budget alerts (80%/100% threshold) and pattern-based insights (weekly spike, top category, monthly pace). Runs after 6 PM via Workmanager background task.
+*   **Contact Developer:** Seamless in-app feedback channel allowing users to write messages and attach screenshots, posted directly to the developer's Discord server via Webhooks.
+*   **Troll Button Easter Egg:** A hidden interactive button inside the Contact Developer screen. Displays a blank screen, plays a laughing cat meme sound effect, shows a custom cat image, and vanishes permanently using Hive state tracking.
 
 ## 🚀 PlayStore Strategy
 *   **Version 1 (Initial Release):** 100% Free for all users to build a strong user base and ensure high retention.
