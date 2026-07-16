@@ -3,6 +3,7 @@ import '../models/expense_model.dart';
 import '../models/subscription_model.dart';
 import '../models/emi_model.dart';
 import '../services/notification_service.dart';
+import '../services/spending_insight_service.dart';
 import '../providers/expense_provider.dart';
 
 class LogProcessor {
@@ -162,5 +163,8 @@ class LogProcessor {
         }
       }
     }
+
+    // Run spending insight analysis (once per day, after 6 PM)
+    await SpendingInsightService.checkAndNotify();
   }
 }

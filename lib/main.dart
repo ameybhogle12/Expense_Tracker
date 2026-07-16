@@ -8,7 +8,6 @@ import 'services/log_processor.dart';
 import 'services/notification_tracker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-
 import 'models/expense_model.dart';
 import 'models/budget_model.dart';
 import 'models/subscription_model.dart';
@@ -47,7 +46,8 @@ void callbackDispatcher() {
       if (!Hive.isAdapterRegistered(4))
         Hive.registerAdapter(GoalModelAdapter());
       if (!Hive.isAdapterRegistered(5)) Hive.registerAdapter(EmiModelAdapter());
-      if (!Hive.isAdapterRegistered(8)) Hive.registerAdapter(WalletModelAdapter());
+      if (!Hive.isAdapterRegistered(8))
+        Hive.registerAdapter(WalletModelAdapter());
 
       await NotificationService().init();
       await LogProcessor.processAll(isBackground: true);
@@ -108,7 +108,8 @@ void main() async {
   await Hive.openBox('feedback_v1');
 
   if (!kIsWeb) {
-    final autoLoggingEnabled = settingsBox.get('auto_logging_enabled', defaultValue: false) as bool;
+    final autoLoggingEnabled =
+        settingsBox.get('auto_logging_enabled', defaultValue: false) as bool;
     if (autoLoggingEnabled) {
       NotificationTracker().startListening();
     }
