@@ -51,10 +51,9 @@ dependencies:
   google_generative_ai: ^0.4.7
   notification_listener_service: ^1.0.0
   flutter_dotenv: ^5.1.0
-
-  flutter_dotenv: ^5.1.0
   http: ^1.2.0
   audioplayers: ^6.0.0
+  lottie: ^3.3.3
 
 dev_dependencies:
   flutter_test:

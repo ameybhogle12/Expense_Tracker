@@ -296,116 +296,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
       body: ListView(
         physics: const BouncingScrollPhysics(),
         children: [
-          if (!kIsWeb) ...[
-            SwitchListTile(
-              title: Text(l10n.requireAuth),
-              subtitle: Text(l10n.requireAuthDesc),
-              value: _useBiometrics,
-              onChanged: _toggleBiometrics,
-              secondary: const Icon(Icons.security),
-            ),
-            const Divider(),
-            SwitchListTile(
-              title: Text(l10n.autoLogging),
-              subtitle: Text(l10n.autoLoggingDesc),
-              value: _autoLoggingEnabled,
-              onChanged: _toggleAutoLogging,
-              secondary: const Icon(Icons.auto_awesome),
-            ),
-            const Divider(),
-          ],
-          Consumer<ThemeProvider>(
-            builder: (context, themeProvider, child) {
-              return ListTile(
-                title: Text(l10n.themeMode),
-                subtitle: Text(l10n.currentTheme(themeProvider.themeMode.name.toUpperCase())),
-                leading: const Icon(Icons.palette),
-                trailing: DropdownButton<ThemeMode>(
-                  value: themeProvider.themeMode,
-                  onChanged: (ThemeMode? newValue) {
-                    if (newValue != null) {
-                      themeProvider.setThemeMode(newValue);
-                    }
-                  },
-                  items: ThemeMode.values.map((ThemeMode mode) {
-                    return DropdownMenuItem<ThemeMode>(
-                      value: mode,
-                      child: Text(mode.name.toUpperCase()),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
-          ),
-          const Divider(),
-          Consumer<CurrencyProvider>(
-            builder: (context, currencyProvider, child) {
-              return ListTile(
-                title: Text(l10n.currency),
-                subtitle: Text(l10n.currentCurrency(currencyProvider.selectedCurrency.name, currencyProvider.code, currencyProvider.symbol)),
-                leading: const Icon(Icons.monetization_on_outlined),
-                trailing: DropdownButton<String>(
-                  value: currencyProvider.code,
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      currencyProvider.setCurrency(newValue);
-                    }
-                  },
-                  items: currencyProvider.availableCurrencies.map((CurrencyInfo info) {
-                    return DropdownMenuItem<String>(
-                      value: info.code,
-                      child: Text('${info.code} (${info.symbol})'),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
-          ),
-          const Divider(),
-          Consumer<LocaleProvider>(
-            builder: (context, localeProvider, child) {
-              return ListTile(
-                title: Text(l10n.language),
-                subtitle: Text(localeProvider.locale?.languageCode == 'ja' ? '日本語' : 'English (System Default)'),
-                leading: const Icon(Icons.language),
-                trailing: DropdownButton<String>(
-                  value: localeProvider.locale?.languageCode ?? 'en',
-                  onChanged: (String? newValue) {
-                    if (newValue == 'ja') {
-                      localeProvider.setLocale(const Locale('ja'));
-                    } else {
-                      localeProvider.setLocale(null); // English / System default
-                    }
-                  },
-                  items: const [
-                    DropdownMenuItem(value: 'en', child: Text('English')),
-                    DropdownMenuItem(value: 'ja', child: Text('日本語')),
-                  ],
-                ),
-              );
-            },
-          ),
-          const Divider(),
-          ListTile(
-            title: Text(l10n.restartTour),
-            subtitle: Text(l10n.restartTourDesc),
-            leading: const Icon(Icons.play_circle_outline),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () {
-              final tourProvider = context.read<TourProvider>();
-              tourProvider.resetTourFlag();
-              Navigator.pop(context); // Pop Settings screen to return to home first!
-              
-              // Wait for pop transition to finish so widget coordinates settle perfectly
-              Future.delayed(const Duration(milliseconds: 600), () {
-                tourProvider.startTour();
-              });
-          _buildAppHeader();
+          _buildAppHeader(),
           
           // Standalone Highlighted Card
-          _buildContactDeveloperCard();
+          _buildContactDeveloperCard(),
 
-          _buildSectionHeader('Preferences');
+          _buildSectionHeader('Preferences'),
           _buildGroupCard([
             Consumer<ThemeProvider>(
               builder: (context, themeProvider, child) {
@@ -481,9 +377,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 );
               },
             ),
-          ]);
+          ]),
 
-          _buildSectionHeader('Data Management');
+          _buildSectionHeader('Data Management'),
           _buildGroupCard([
             ListTile(
               title: Text(l10n.manageWallets),
@@ -523,9 +419,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 );
               },
             ),
-          ]);
+          ]),
 
-          _buildSectionHeader('Data & Security');
+          _buildSectionHeader('Data & Security'),
           _buildGroupCard([
             if (!kIsWeb) ...[
               SwitchListTile(
@@ -534,6 +430,14 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
                 value: _useBiometrics,
                 onChanged: _toggleBiometrics,
                 secondary: _buildIconContainer(Icons.security, Colors.teal),
+              ),
+              const Divider(height: 1, indent: 64),
+              SwitchListTile(
+                title: Text(l10n.autoLogging),
+                subtitle: Text(l10n.autoLoggingDesc),
+                value: _autoLoggingEnabled,
+                onChanged: _toggleAutoLogging,
+                secondary: _buildIconContainer(Icons.auto_awesome, Colors.purpleAccent),
               ),
               const Divider(height: 1, indent: 64),
             ],
@@ -552,9 +456,9 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
               trailing: const Icon(Icons.chevron_right),
               onTap: _handleRestore,
             ),
-          ]);
+          ]),
 
-          _buildSectionHeader('About & Support');
+          _buildSectionHeader('About & Support'),
           _buildGroupCard([
             ListTile(
               title: Text(l10n.restartTour),

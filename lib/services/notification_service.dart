@@ -31,16 +31,6 @@ class NotificationService {
       importance: Importance.high,
     );
 
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
-
-    // Request notification permission for Android 13+
-    await _notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
     // Channel for spending insight notifications
     const AndroidNotificationChannel insightsChannel =
         AndroidNotificationChannel(

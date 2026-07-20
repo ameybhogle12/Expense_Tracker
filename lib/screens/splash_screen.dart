@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:lottie/lottie.dart';
 import 'auth_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -27,12 +28,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFF121212), // Sleek, premium dark background
-      body: SizedBox.expand(
-        child: Image(
-          image: AssetImage('assets/icon/Logo Animation.gif'),
-          fit: BoxFit.cover,
+    return Scaffold(
+      backgroundColor: const Color(0xFF121212), // Sleek, premium dark background
+      body: Center(
+        child: Lottie.asset(
+          'assets/icon/Expense Tracker Logo Animation.json',
+          fit: BoxFit.contain,
         ),
       ),
     );
