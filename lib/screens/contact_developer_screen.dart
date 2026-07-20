@@ -37,10 +37,17 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     super.initState();
     final box = Hive.box('settings_v1');
     _trollState = box.get('trollState', defaultValue: 0) as int;
-    // DEV MODE: Always reset to 0 so the troll button is re-triggerable.
-    if (_trollState != 0) {
-      _trollState = 0;
-      box.put('trollState', 0);
+    
+    if (_trollState == 1) {
+      // Auto-clear to state 2 if app closed during presentation
+      Timer(const Duration(seconds: 4), () async {
+        if (mounted) {
+          setState(() {
+            _trollState = 2;
+          });
+          await box.put('trollState', 2);
+        }
+      });
     }
   }
 
@@ -108,14 +115,13 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
       debugPrint("Audio play error: $e");
     }
 
-    // DEV MODE: Reset back to 0 after 5 seconds so button is re-triggerable.
-    // For production, change this to set state to 2 (permanent hide).
-    Timer(const Duration(seconds: 5), () async {
+    // Dismiss the easter egg after 4 seconds
+    Timer(const Duration(seconds: 4), () async {
       if (mounted) {
         setState(() {
-          _trollState = 0;
+          _trollState = 2;
         });
-        await box.put('trollState', 0);
+        await box.put('trollState', 2);
       }
     });
   }

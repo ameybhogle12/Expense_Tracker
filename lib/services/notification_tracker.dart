@@ -8,6 +8,9 @@ import '../providers/expense_provider.dart';
 import 'ai_category_service.dart';
 import 'notification_service.dart';
 
+// Set to true on develop branch (Premium features), and false on main branch (Free release)
+const bool kEnableAutoLogging = true;
+
 class NotificationTracker {
   static final NotificationTracker _instance = NotificationTracker._internal();
   factory NotificationTracker() => _instance;
@@ -77,6 +80,18 @@ class NotificationTracker {
       final isAutoLoggingEnabled = settingsBox.get('auto_logging_enabled', defaultValue: true) as bool;
       if (!isAutoLoggingEnabled) return;
 
+      final currencySymbol = settingsBox.get('currency_symbol', defaultValue: '₹') as String;
+      final merchant = parsed.merchant ?? 'Merchant';
+
+      // Free Tier / main branch behavior: Only notify the user to add the expense manually
+      if (!kEnableAutoLogging) {
+        await NotificationService().showNotification(
+          title: '💳 Payment Detected',
+          body: 'Spent $currencySymbol${parsed.amount!.toStringAsFixed(0)} at $merchant? Tap to log it before you forget!',
+        );
+        return;
+      }
+
       // Extract categories list
       final availableCategories = categoryBox.values.map((c) => c.name).toList();
       if (availableCategories.isEmpty) {
@@ -88,8 +103,6 @@ class NotificationTracker {
         availableCategories.add('Other');
       }
 
-      final merchant = parsed.merchant ?? 'Unknown Merchant';
-      
       // Use AI to get category
       final aiService = AICategoryService();
       await aiService.init();
@@ -109,7 +122,6 @@ class NotificationTracker {
       await expenseBox.add(newExpense);
 
       // Notify the user of successful log
-      final currencySymbol = settingsBox.get('currency_symbol', defaultValue: '₹') as String;
       await NotificationService().showNotification(
         title: '✨ Auto-Logged Transaction',
         body: 'Saved $currencySymbol${parsed.amount!.toStringAsFixed(0)} at $merchant under $category.',
