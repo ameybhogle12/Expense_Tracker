@@ -9,7 +9,7 @@ import 'ai_category_service.dart';
 import 'notification_service.dart';
 
 // Set to true on develop branch (Premium features), and false on main branch (Free release)
-const bool kEnableAutoLogging = true;
+const bool kEnableAutoLogging = false;
 
 class NotificationTracker {
   static final NotificationTracker _instance = NotificationTracker._internal();
