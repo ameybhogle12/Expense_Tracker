@@ -29,10 +29,11 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212), // Sleek, premium dark background
+      backgroundColor:
+          const Color(0xFF121212), // Sleek, premium dark background
       body: Center(
         child: Lottie.asset(
-          'assets/icon/Expense Tracker Logo Animation.json',
+          'assets/icon/Logo Animation.json',
           fit: BoxFit.contain,
         ),
       ),
