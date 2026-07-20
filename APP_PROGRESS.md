@@ -68,6 +68,12 @@
 *   **Problem:** The app had multiple `print` and `debugPrint` statements scattered across background listener isolates and UI controllers, which print raw exceptions and internal statuses to standard log outputs.
 *   **Root Cause:** Trace logging left over from early development and debugging.
 *   **Solution:** Removed all dev-specific `print` statements from background services (`notification_tracker.dart` and `ai_category_service.dart`) to keep logs silent. Replaced all catch-block `debugPrint` calls in UI screens (`home_screen.dart`, `main_screen.dart`, `splits_screen.dart`, `contact_developer_screen.dart`, `auth_wrapper.dart`) with silent empty blocks or standard exception swallow handling.
+### 10. Duplicate Version Code Error on Play Store Release
+*   **Problem:** Google Play Console rejected the release package (`app-release.aab`) with the error: "Version code 8 has already been used. Try another version code."
+*   **Root Cause:** The `version` field in `pubspec.yaml` was set to `1.0.6+8`, meaning the build number (Android's `versionCode`) was compiled as `8`, which had already been uploaded to the Play Console in a previous build.
+*   **Solution:** Incremented the build number in `pubspec.yaml` to `1.0.6+9` (versionCode `9`) and rebuilt the app bundle.
 
-
-
+### 11. Release Build Fails Due to Icon Tree Shaking
+*   **Problem:** Building the release app bundle using `flutter build appbundle` fails with the error: "This application cannot tree shake icons fonts. It has non-constant instances of IconData..."
+*   **Root Cause:** The application supports dynamic categories where the custom icon's `iconCodePoint` is loaded from a Hive database at runtime. Since the compilation contains non-constant invocations of `IconData(...)` for these custom icons, the Flutter build tool cannot statically tree-shake the material icons font.
+*   **Solution:** Built the app bundle using the `--no-tree-shake-icons` flag to bypass the icon font optimization step: `flutter build appbundle --no-tree-shake-icons`.

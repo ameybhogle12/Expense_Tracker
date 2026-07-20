@@ -181,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'v1.0.5 (Free Release)',
+            'v1.0.6 (Free Release)',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade600,
@@ -200,11 +200,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Colors.pinkAccent.withOpacity(0.35),
+          color: Colors.deepPurpleAccent.withOpacity(0.35),
           width: 1.5,
         ),
       ),
-      color: isDark ? Colors.pink.withOpacity(0.06) : Colors.pink.withOpacity(0.02),
+      color: isDark ? Colors.deepPurple.withOpacity(0.06) : Colors.deepPurple.withOpacity(0.02),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         title: const Text(
@@ -212,8 +212,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
         subtitle: const Text('Share feedback, suggestions, or report bugs directly to Amey.'),
-        leading: _buildIconContainer(Icons.support_agent, Colors.pinkAccent),
-        trailing: const Icon(Icons.chevron_right, color: Colors.pinkAccent),
+        leading: _buildIconContainer(Icons.support_agent, Colors.deepPurpleAccent),
+        trailing: const Icon(Icons.chevron_right, color: Colors.deepPurpleAccent),
         onTap: () {
           Navigator.push(
             context,
