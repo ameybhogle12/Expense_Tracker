@@ -85,7 +85,6 @@ flutter:
 
   assets:
     - assets/icon/
-    - .env
     - assets/meme/
 
 flutter_launcher_icons:

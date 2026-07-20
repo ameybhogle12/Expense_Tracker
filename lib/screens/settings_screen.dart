@@ -15,7 +15,6 @@ import 'contact_developer_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
 import '../providers/locale_provider.dart';
-import '../services/spending_insight_service.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
 
 
@@ -429,26 +428,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       SnackBar(content: Text(l10n.feedbackError)),
                     );
                   }
-                }
-              },
-            ),
-            const Divider(height: 1, indent: 64),
-            ListTile(
-              title: const Text('Debug: Test Spending Insights'),
-              subtitle: const Text('Triggers the background analysis manually to test notifications immediately.'),
-              leading: _buildIconContainer(Icons.bug_report, Colors.redAccent),
-              trailing: const Icon(Icons.play_arrow),
-              onTap: () async {
-                final didNotify = await SpendingInsightService.checkAndNotify(force: true);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(didNotify 
-                        ? 'Insight notification sent!' 
-                        : 'No insights triggered. Ensure you have active budgets or monthly expenses logged.'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
                 }
               },
             ),

@@ -36,7 +36,6 @@ class NotificationTracker {
 
     final isGranted = await NotificationListenerService.isPermissionGranted();
     if (!isGranted) {
-      print("Notification listener permission not granted.");
       return;
     }
 
@@ -44,7 +43,6 @@ class NotificationTracker {
     _subscription = NotificationListenerService.notificationsStream.listen((event) {
       _handleNotificationEvent(event);
     });
-    print("Notification listener started.");
   }
 
   /// Stops listening to notifications.
@@ -52,7 +50,6 @@ class NotificationTracker {
     _subscription?.cancel();
     _subscription = null;
     _isListening = false;
-    print("Notification listener stopped.");
   }
 
   /// Processes intercepted notifications.
@@ -103,7 +100,6 @@ class NotificationTracker {
       final now = DateTime.now();
       final lastSeen = _recentTransactions[dedupeKey];
       if (lastSeen != null && now.difference(lastSeen) < _deduplicationCooldown) {
-        print('NotificationTracker: Duplicate transaction ignored ($dedupeKey)');
         return;
       }
       _recentTransactions[dedupeKey] = now;
@@ -155,8 +151,8 @@ class NotificationTracker {
         body: 'Saved $currencySymbol${parsed.amount!.toStringAsFixed(0)} at $merchant under $category.',
       );
 
-    } catch (e) {
-      print("NotificationTracker Error: $e");
+    } catch (_) {
+      // Silently handle errors in background notification processing
     }
   }
 

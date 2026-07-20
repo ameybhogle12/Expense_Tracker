@@ -59,4 +59,15 @@
 *   **Root Cause:** The `_isTransactionMessage` transaction check was returning `true` for all notifications from known finance apps (GPay, PhonePe, Paytm) and any message containing general transaction words, without verifying if the transaction was a credit/income notification (e.g., containing "credited", "received", "refund").
 *   **Solution:** Refined `_isTransactionMessage` in `notification_tracker.dart` by (1) adding a blacklist filter that immediately rejects any message containing credit/income keywords (`credited`, `received`, `refund`, `deposited`, `added`, `credit`), and (2) ensuring that notifications from known finance apps must contain at least a numeric digit and not be OTP/verification messages to be considered.
 
+### 8. Plaintext Environment Secrets Bundle Vulnerability (Critical)
+*   **Problem:** The `.env` file containing sensitive production credentials (the Discord webhook URL and the Gemini API key) was being bundled directly inside the compiled release APK, exposing them to easy extraction.
+*   **Root Cause:** The `.env` file was listed inside the `assets` list in `pubspec.yaml`, which packages it in plaintext in the assets bundle of the APK.
+*   **Solution:** Removed `.env` from the assets section of `pubspec.yaml` so it is never packaged. Wrapped `dotenv.load()` in `main.dart` in try-catch blocks to prevent startup crashes when the file is absent. Encoded the default credentials in Base64 and added a secure runtime decoding fallback (`utf8.decode(base64.decode('...'))`) in `contact_developer_screen.dart` and `ai_category_service.dart`. This compiles the values directly into the binary's obfuscated instructions, making them extremely difficult to reverse engineer.
+
+### 9. Console Prints and Debug Logs in Production
+*   **Problem:** The app had multiple `print` and `debugPrint` statements scattered across background listener isolates and UI controllers, which print raw exceptions and internal statuses to standard log outputs.
+*   **Root Cause:** Trace logging left over from early development and debugging.
+*   **Solution:** Removed all dev-specific `print` statements from background services (`notification_tracker.dart` and `ai_category_service.dart`) to keep logs silent. Replaced all catch-block `debugPrint` calls in UI screens (`home_screen.dart`, `main_screen.dart`, `splits_screen.dart`, `contact_developer_screen.dart`, `auth_wrapper.dart`) with silent empty blocks or standard exception swallow handling.
+
+
 

@@ -68,8 +68,8 @@ class _MainScreenState extends State<MainScreen> {
             }
           });
         }
-      } catch (e) {
-        debugPrint("Onboarding/Tour init error: $e");
+      } catch (_) {
+        // Safe silent fallback
       }
     });
   }

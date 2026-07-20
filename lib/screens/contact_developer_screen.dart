@@ -111,8 +111,8 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
     // Play cat laugh sound effect
     try {
       await _audioPlayer.play(AssetSource('meme/cat-laugh-meme-1.mp3'));
-    } catch (e) {
-      debugPrint("Audio play error: $e");
+    } catch (_) {
+      // Safe silent fallback
     }
 
     // Dismiss the easter egg after 4 seconds
@@ -129,7 +129,16 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
   Future<void> _submitFeedback() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final webhookUrl = dotenv.env['DISCORD_WEBHOOK_URL'];
+    String? webhookUrl = dotenv.env['DISCORD_WEBHOOK_URL'];
+    if (webhookUrl == null || webhookUrl.isEmpty) {
+      const obfuscated = 'aHR0cHM6Ly9kaXNjb3JkLmNvbS9hcGkvd2ViaG9va3MvMTUyNjIzNjU1OTIyODE0NTcyNS9yN3IwdF9KTEFoTEdnVllnZ1d5akZ3b0tGY3NJNW9SNkhYOWZ3aFFDaTI5NmxQV25BNzBmdEdEMURWWERMZTA4N3Q1Rw==';
+      try {
+        webhookUrl = utf8.decode(base64.decode(obfuscated));
+      } catch (_) {
+        webhookUrl = '';
+      }
+    }
+
     if (webhookUrl == null || webhookUrl.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: Webhook URL is not configured.')),

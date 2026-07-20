@@ -25,8 +25,8 @@ class _SplitsScreenState extends State<SplitsScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       try {
         context.read<TourProvider>().registerKey('splits_fab', _splitsFabKey);
-      } catch (e) {
-        debugPrint("Error registering Splits FAB key: $e");
+      } catch (_) {
+        // Silent fallback — tour key registration is non-critical
       }
     });
   }

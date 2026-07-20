@@ -68,7 +68,6 @@ class _AuthWrapperState extends State<AuthWrapper> with WidgetsBindingObserver {
         setState(() => _isAuthenticated = true);
       }
     } catch (e) {
-      debugPrint("Auth Error: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Auth Error: $e')),

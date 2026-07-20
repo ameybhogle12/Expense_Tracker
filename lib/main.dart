@@ -23,7 +23,6 @@ import 'providers/split_provider.dart';
 import 'providers/tour_provider.dart';
 import 'providers/currency_provider.dart';
 import 'providers/locale_provider.dart';
-import 'screens/auth_wrapper.dart';
 import 'screens/splash_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
@@ -32,7 +31,11 @@ import 'package:expense_tracker/l10n/app_localizations.dart';
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
     try {
-      await dotenv.load(fileName: ".env");
+      try {
+        await dotenv.load(fileName: ".env");
+      } catch (_) {
+        // Safe fallback if .env is not present in production assets
+      }
       await Hive.initFlutter();
       // Register all adapters again for the background isolate
       if (!Hive.isAdapterRegistered(0))
@@ -61,7 +64,11 @@ void callbackDispatcher() {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
+  try {
+    await dotenv.load(fileName: ".env");
+  } catch (_) {
+    // Safe fallback if .env is not present in production assets
+  }
   await Hive.initFlutter();
 
   if (!kIsWeb) {

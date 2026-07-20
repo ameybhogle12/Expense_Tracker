@@ -26,8 +26,8 @@ class _HomeScreenState extends State<HomeScreen> {
       try {
         final tourProvider = context.read<TourProvider>();
         tourProvider.registerKey('wallets', _walletsKey);
-      } catch (e) {
-        debugPrint("TourProvider not registered yet: $e");
+      } catch (_) {
+        // Safe silent fallback — onboarding tour registration is non-critical
       }
     });
   }
