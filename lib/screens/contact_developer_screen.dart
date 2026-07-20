@@ -282,8 +282,8 @@ class _ContactDeveloperScreenState extends State<ContactDeveloperScreen> {
                           if (_trollState == 0)
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.deepOrange,
-                                side: const BorderSide(color: Colors.deepOrange, width: 1.5),
+                                foregroundColor: Colors.purpleAccent,
+                                side: const BorderSide(color: Colors.purpleAccent, width: 1.5),
                                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                               ),
                               onPressed: _triggerTroll,
