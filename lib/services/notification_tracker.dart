@@ -19,6 +19,15 @@ class NotificationTracker {
   StreamSubscription? _subscription;
   bool _isListening = false;
 
+  /// Deduplication cache: stores "amount|merchant" -> timestamp of last processed notification.
+  /// Prevents the same transaction from being processed multiple times within the cooldown window.
+  final Map<String, DateTime> _recentTransactions = {};
+  static const _deduplicationCooldown = Duration(seconds: 60);
+
+  /// The app's own package name — notifications from this package must be ignored
+  /// to prevent an infinite self-triggering loop.
+  static const _ownPackageName = 'com.ameybhogle.expensetracker';
+
   bool get isListening => _isListening;
 
   /// Starts listening to notifications.
@@ -48,10 +57,16 @@ class NotificationTracker {
 
   /// Processes intercepted notifications.
   Future<void> _handleNotificationEvent(ServiceNotificationEvent event) async {
+    final package = event.packageName;
+
+    // CRITICAL: Ignore the app's own notifications to prevent infinite loop.
+    // Our "Payment Detected" notification contains ₹ and "Spent", which would
+    // re-match the transaction regex and cause endless self-triggering.
+    if (package == _ownPackageName) return;
+
     // Only process notifications that look like transactions
-    final title = event.title ?? '';
-    final content = event.content ?? '';
-    final package = event.packageName ?? '';
+    final title = event.title;
+    final content = event.content;
 
     final textToParse = "$title $content";
     if (!_isTransactionMessage(textToParse, package)) {
@@ -82,6 +97,19 @@ class NotificationTracker {
 
       final currencySymbol = settingsBox.get('currency_symbol', defaultValue: '₹') as String;
       final merchant = parsed.merchant ?? 'Merchant';
+
+      // Deduplication: skip if we already processed this exact amount+merchant recently
+      final dedupeKey = '${parsed.amount!.toStringAsFixed(2)}|$merchant';
+      final now = DateTime.now();
+      final lastSeen = _recentTransactions[dedupeKey];
+      if (lastSeen != null && now.difference(lastSeen) < _deduplicationCooldown) {
+        print('NotificationTracker: Duplicate transaction ignored ($dedupeKey)');
+        return;
+      }
+      _recentTransactions[dedupeKey] = now;
+
+      // Housekeeping: purge stale entries older than 5 minutes
+      _recentTransactions.removeWhere((_, ts) => now.difference(ts).inMinutes > 5);
 
       // Free Tier / main branch behavior: Only notify the user to add the expense manually
       if (!kEnableAutoLogging) {
@@ -136,6 +164,21 @@ class NotificationTracker {
   bool _isTransactionMessage(String text, String package) {
     final lowerText = text.toLowerCase();
     
+    // Exclude credit/income keywords (we only track expenses/spending)
+    final creditTriggers = [
+      'credited',
+      'received',
+      'refund',
+      'deposited',
+      'added',
+      'credit',
+    ];
+    for (var trigger in creditTriggers) {
+      if (lowerText.contains(trigger)) {
+        return false;
+      }
+    }
+
     // Check for common financial package names
     final knownFinPackages = [
       'com.google.android.apps.nbu.paisa.user', // GPay
@@ -145,7 +188,11 @@ class NotificationTracker {
     ];
 
     if (knownFinPackages.contains(package)) {
-      return true;
+      if (!lowerText.contains('otp') && !lowerText.contains('code') && !lowerText.contains('verification')) {
+        // Must contain at least a number to be considered a potential transaction
+        return RegExp(r'\d').hasMatch(lowerText);
+      }
+      return false;
     }
 
     // Keyword checks (e.g. UPI, debited, paid, spent)

@@ -44,3 +44,19 @@
 *   **Root Cause:** Calling `showDialog` directly inside the dropdown's `onChanged` callback attempts to push a new route (`DialogRoute`) while the dropdown's pop transition is still processing, causing a route collision/rebuild error.
 *   **Solution:** Wrapped the `_showQuickAddCategoryDialog()` call in `WidgetsBinding.instance.addPostFrameCallback` to defer the dialog route push until the next frame after the dropdown transition completes.
 
+### 5. NotificationListener ClassNotFoundException Crash
+*   **Problem:** Enabling the Auto-Magic Logger and granting Notification Access permission caused an immediate `FATAL EXCEPTION: java.lang.ClassNotFoundException: Didn't find class "com.xans.notification_listener_service.NotificationListener"`, crashing the app.
+*   **Root Cause:** The `<service>` entry in `AndroidManifest.xml` was registered with the wrong Java package path `com.xans.notification_listener_service.NotificationListener`. The actual `notification_listener_service` plugin (v1.0.0) uses the package `notification.listener.service`. The `com.xans` path was likely from an older version or incorrect documentation.
+*   **Solution:** Updated the `android:name` attribute in the `<service>` tag in `android/app/src/main/AndroidManifest.xml` from `com.xans.notification_listener_service.NotificationListener` to `notification.listener.service.NotificationListener`. Required a full `flutter clean` + rebuild since this is a native Android manifest change.
+
+### 6. Payment Detection Notification Infinite Spam Loop
+*   **Problem:** After fixing the ClassNotFoundException crash, enabling the Auto-Magic Logger and making a real payment caused the "💳 Payment Detected" notification to spam infinitely, flooding the notification tray.
+*   **Root Cause:** Two compounding issues: (1) **Self-triggering loop** — The app's own "Payment Detected" notification body contained `₹` and `Spent`, which matched both the amount regex and the `_isTransactionMessage` keyword triggers. The notification listener intercepted the app's own notification, parsed it as a new transaction, fired another notification, ad infinitum. (2) **No deduplication** — Bank/UPI apps often fire multiple notification events (create, update, re-post) for a single transaction, and each event was processed independently.
+*   **Solution:** Added two safeguards in `notification_tracker.dart`: (1) **Self-filter** — Immediately `return` if `event.packageName == 'com.ameybhogle.expensetracker'` (the app's own package). (2) **60-second deduplication cache** — A `Map<String, DateTime>` keyed on `"amount|merchant"` that rejects duplicate transactions within a 60-second window, with automatic 5-minute housekeeping cleanup.
+
+### 7. Credit/Income Transaction Notification Parsing Bug
+*   **Problem:** Incoming payments (credit/income transactions like a friend sending money back) were parsed as payments (expenses/debits) and prompted the user with "Spent Rs. X? Tap to log it".
+*   **Root Cause:** The `_isTransactionMessage` transaction check was returning `true` for all notifications from known finance apps (GPay, PhonePe, Paytm) and any message containing general transaction words, without verifying if the transaction was a credit/income notification (e.g., containing "credited", "received", "refund").
+*   **Solution:** Refined `_isTransactionMessage` in `notification_tracker.dart` by (1) adding a blacklist filter that immediately rejects any message containing credit/income keywords (`credited`, `received`, `refund`, `deposited`, `added`, `credit`), and (2) ensuring that notifications from known finance apps must contain at least a numeric digit and not be OTP/verification messages to be considered.
+
+
