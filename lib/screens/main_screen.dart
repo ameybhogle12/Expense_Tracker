@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'home_screen.dart';
@@ -34,9 +35,40 @@ class _MainScreenState extends State<MainScreen> {
 
   TourProvider? _tourProvider;
 
+  static const _channel = MethodChannel('com.ameybhogle.expensetracker/payment_detection');
+
+  void _setupPaymentDetectionChannel() {
+    _channel.setMethodCallHandler((call) async {
+      if (call.method == 'onPaymentDetected') {
+        final amount = (call.arguments['amount'] as num?)?.toDouble();
+        final merchant = call.arguments['merchant'] as String?;
+        if (amount != null && amount > 0) {
+          _openAddExpenseOverlay(prefilledAmount: amount, prefilledMerchant: merchant);
+        }
+      }
+    });
+
+    // Query for any pending notification data that might have launched the app
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        final data = await _channel.invokeMethod('getPendingNotificationData');
+        if (data != null) {
+          final amount = (data['amount'] as num?)?.toDouble();
+          final merchant = data['merchant'] as String?;
+          if (amount != null && amount > 0) {
+            _openAddExpenseOverlay(prefilledAmount: amount, prefilledMerchant: merchant);
+          }
+        }
+      } catch (_) {
+        // Silent fallback
+      }
+    });
+  }
+
   @override
   void initState() {
     super.initState();
+    _setupPaymentDetectionChannel();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         _tourProvider = context.read<TourProvider>();
@@ -98,12 +130,15 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-  void _openAddExpenseOverlay() {
+  void _openAddExpenseOverlay({double? prefilledAmount, String? prefilledMerchant}) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (ctx) => const AddExpenseForm(),
+      builder: (ctx) => AddExpenseForm(
+        prefilledAmount: prefilledAmount,
+        prefilledMerchant: prefilledMerchant,
+      ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:notification_listener_service/notification_listener_service.dart';
 import 'package:notification_listener_service/notification_event.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter/services.dart';
 import '../models/expense_model.dart';
 import '../models/category_model.dart';
 import '../providers/expense_provider.dart';
@@ -15,6 +16,8 @@ class NotificationTracker {
   static final NotificationTracker _instance = NotificationTracker._internal();
   factory NotificationTracker() => _instance;
   NotificationTracker._internal();
+
+  static const _channel = MethodChannel('com.ameybhogle.expensetracker/payment_detection');
 
   StreamSubscription? _subscription;
   bool _isListening = false;
@@ -32,12 +35,23 @@ class NotificationTracker {
 
   /// Starts listening to notifications.
   Future<void> startListening() async {
-    if (_isListening) return;
+    if (_isListening) {
+      // Sync enable auto logging state anyway
+      try {
+        await _channel.invokeMethod('setEnableAutoLogging', {'enabled': kEnableAutoLogging});
+      } catch (_) {}
+      return;
+    }
 
     final isGranted = await NotificationListenerService.isPermissionGranted();
     if (!isGranted) {
       return;
     }
+
+    // Sync enable auto logging state with native SharedPreferences
+    try {
+      await _channel.invokeMethod('setEnableAutoLogging', {'enabled': kEnableAutoLogging});
+    } catch (_) {}
 
     _isListening = true;
     _subscription = NotificationListenerService.notificationsStream.listen((event) {
@@ -109,10 +123,8 @@ class NotificationTracker {
 
       // Free Tier / main branch behavior: Only notify the user to add the expense manually
       if (!kEnableAutoLogging) {
-        await NotificationService().showNotification(
-          title: '💳 Payment Detected',
-          body: 'Spent $currencySymbol${parsed.amount!.toStringAsFixed(0)} at $merchant? Tap to log it before you forget!',
-        );
+        // We return immediately because the native CustomNotificationListener already handles notification posting
+        // when the app is in the background/foreground, to ensure it works when closed.
         return;
       }
 

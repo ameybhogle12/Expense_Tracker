@@ -12,7 +12,15 @@ enum TransactionType { expense, income, transfer }
 class AddExpenseForm extends StatefulWidget {
   /// When provided, the form opens in edit mode for this transaction.
   final ExpenseModel? existing;
-  const AddExpenseForm({super.key, this.existing});
+  final double? prefilledAmount;
+  final String? prefilledMerchant;
+
+  const AddExpenseForm({
+    super.key,
+    this.existing,
+    this.prefilledAmount,
+    this.prefilledMerchant,
+  });
 
   @override
   State<AddExpenseForm> createState() => _AddExpenseFormState();
@@ -62,6 +70,15 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       _paymentMethod = existing.paymentMethod;
       if (!existing.isIncome) {
         _selectedCategory = existing.category;
+      }
+    } else {
+      // Prefill from payment detection notification if available
+      if (widget.prefilledAmount != null && widget.prefilledAmount! > 0) {
+        _amountController.text = widget.prefilledAmount!.toStringAsFixed(
+            widget.prefilledAmount == widget.prefilledAmount!.roundToDouble() ? 0 : 2);
+      }
+      if (widget.prefilledMerchant != null) {
+        _noteController.text = widget.prefilledMerchant!;
       }
     }
   }

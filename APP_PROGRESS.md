@@ -77,3 +77,9 @@
 *   **Problem:** Building the release app bundle using `flutter build appbundle` fails with the error: "This application cannot tree shake icons fonts. It has non-constant instances of IconData..."
 *   **Root Cause:** The application supports dynamic categories where the custom icon's `iconCodePoint` is loaded from a Hive database at runtime. Since the compilation contains non-constant invocations of `IconData(...)` for these custom icons, the Flutter build tool cannot statically tree-shake the material icons font.
 *   **Solution:** Built the app bundle using the `--no-tree-shake-icons` flag to bypass the icon font optimization step: `flutter build appbundle --no-tree-shake-icons`.
+
+### 12. Payment Detection Fails to Notify When App is Closed/Terminated
+*   **Problem:** The free-tier payment detection and notification feature only worked when the app was open, and failed to run when the app was closed or swiped away.
+*   **Root Cause:** When the app is terminated, the Dart/Flutter engine is destroyed, killing the dynamic stream listener of the notification plugin.
+*   **Solution:** Implemented a native Kotlin `CustomNotificationListener` extending the plugin's service. By handling the notification parsing, cooldown filtering, and local notification posting directly in Kotlin, it runs reliably as a system-bound service independent of the Flutter UI. Used a MethodChannel for inter-isolate and launch intent communication to pass the parsed amount and merchant to the Flutter UI, opening a pre-filled Add Expense form upon tapping the notification.
+

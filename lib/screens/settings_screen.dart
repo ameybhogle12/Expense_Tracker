@@ -16,6 +16,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../utils/constants.dart';
 import '../providers/locale_provider.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
+import '../services/notification_tracker.dart';
+import 'package:notification_listener_service/notification_listener_service.dart';
 
 
 
@@ -28,12 +30,14 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late bool _useBiometrics;
+  late bool _autoLoggingEnabled;
 
   @override
   void initState() {
     super.initState();
     final box = Hive.box('settings_v1');
     _useBiometrics = box.get('useBiometrics', defaultValue: false);
+    _autoLoggingEnabled = box.get('auto_logging_enabled', defaultValue: false);
   }
 
   void _toggleBiometrics(bool value) async {
@@ -42,6 +46,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() {
       _useBiometrics = value;
     });
+  }
+
+  void _toggleAutoLogging(bool value) async {
+    final box = Hive.box('settings_v1');
+    final l10n = AppLocalizations.of(context)!;
+    if (value) {
+      final isGranted = await NotificationListenerService.isPermissionGranted();
+      if (!isGranted) {
+        final requestResult = await NotificationListenerService.requestPermission();
+        if (!requestResult) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(l10n.autoLoggingNotificationAccess),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          return;
+        }
+      }
+      await box.put('auto_logging_enabled', true);
+      await NotificationTracker().startListening();
+      setState(() {
+        _autoLoggingEnabled = true;
+      });
+    } else {
+      await box.put('auto_logging_enabled', false);
+      NotificationTracker().stopListening();
+      setState(() {
+        _autoLoggingEnabled = false;
+      });
+    }
   }
 
   Future<void> _handleBackup() async {
@@ -369,6 +406,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _useBiometrics,
                 onChanged: _toggleBiometrics,
                 secondary: _buildIconContainer(Icons.security, Colors.teal),
+              ),
+              const Divider(height: 1, indent: 64),
+              SwitchListTile(
+                title: Text(l10n.autoLogging),
+                subtitle: Text(l10n.autoLoggingDesc),
+                value: _autoLoggingEnabled,
+                onChanged: _toggleAutoLogging,
+                secondary: _buildIconContainer(Icons.notification_important_outlined, Colors.deepOrange),
               ),
               const Divider(height: 1, indent: 64),
             ],
