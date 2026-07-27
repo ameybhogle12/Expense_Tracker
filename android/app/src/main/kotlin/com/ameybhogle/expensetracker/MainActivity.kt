@@ -2,7 +2,11 @@ package com.ameybhogle.expensetracker
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.PowerManager
+import android.provider.Settings
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -37,6 +41,37 @@ class MainActivity: FlutterFragmentActivity() {
                     val sharedPrefs = getSharedPreferences("ExpenseTrackerPrefs", Context.MODE_PRIVATE)
                     sharedPrefs.edit().putBoolean("enable_auto_logging", enabled).apply()
                     result.success(true)
+                }
+                "isBatteryOptimized" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+                        val isIgnoring = pm.isIgnoringBatteryOptimizations(packageName)
+                        result.success(!isIgnoring) // true = optimized (bad), false = whitelisted (good)
+                    } else {
+                        result.success(false) // Pre-M: no battery optimization
+                    }
+                }
+                "requestBatteryOptimization" -> {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        try {
+                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                data = Uri.parse("package:$packageName")
+                            }
+                            startActivity(intent)
+                            result.success(true)
+                        } catch (e: Exception) {
+                            // Fallback: open general battery optimization settings
+                            try {
+                                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                                startActivity(fallbackIntent)
+                                result.success(true)
+                            } catch (e2: Exception) {
+                                result.success(false)
+                            }
+                        }
+                    } else {
+                        result.success(false)
+                    }
                 }
                 else -> {
                     result.notImplemented()
@@ -79,3 +114,4 @@ class MainActivity: FlutterFragmentActivity() {
         }
     }
 }
+

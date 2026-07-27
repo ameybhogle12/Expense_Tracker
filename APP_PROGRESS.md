@@ -5,6 +5,7 @@
 *   **Categories:** Unlimited Categories.
 *   **Subscriptions:** Unlimited Subscription tracking with automatic background logging.
 *   **Trips (Splits):** Split expenses with friends for trips.
+*   **Itemized Bill Splitter (Quick Mode & Fun Mode):** Split complex dining/group bills item-by-item (e.g. pastries, drinks, desserts) with custom per-item member assignments, optional proportional tax & tip calculation, live per-person breakdown, and a Fun Mode teaser tab ("Hold on people coming soon 🚀").
 *   **Goals & EMIs:** Track saving goals and upcoming EMI payments.
 *   **Security:** Screenshot App Lock.
 *   **Dashboard:** Advanced interactive Donut Charts and Line Charts for tracking expenses.
@@ -80,6 +81,12 @@
 
 ### 12. Payment Detection Fails to Notify When App is Closed/Terminated
 *   **Problem:** The free-tier payment detection and notification feature only worked when the app was open, and failed to run when the app was closed or swiped away.
-*   **Root Cause:** When the app is terminated, the Dart/Flutter engine is destroyed, killing the dynamic stream listener of the notification plugin.
-*   **Solution:** Implemented a native Kotlin `CustomNotificationListener` extending the plugin's service. By handling the notification parsing, cooldown filtering, and local notification posting directly in Kotlin, it runs reliably as a system-bound service independent of the Flutter UI. Used a MethodChannel for inter-isolate and launch intent communication to pass the parsed amount and merchant to the Flutter UI, opening a pre-filled Add Expense form upon tapping the notification.
+*   **Root Cause:** When the app is terminated, the Dart/Flutter engine is destroyed, killing the dynamic stream listener of the notification plugin. Additionally, OEM battery optimization (Samsung, Xiaomi, OnePlus, etc.) aggressively kills/unbinds the `NotificationListenerService` even though it's a system-bound service.
+*   **Solution:** Implemented a native Kotlin `CustomNotificationListener` extending the plugin's service. Added `FOREGROUND_SERVICE` and `REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permissions to `AndroidManifest.xml`. Added a battery optimization whitelist prompt in Settings via a native `MethodChannel` → `PowerManager.isIgnoringBatteryOptimizations()` check + `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` intent. The Settings tile shows "Restricted" (red) or "Unrestricted" (green) status with a "Fix" button.
+
+### 14. `dependOnInheritedWidgetOfExactType` Red Screen Crash in `SettlementScreen`
+*   **Problem:** Navigating to the Settle screen caused a red crash screen with `dependOnInheritedWidgetOfExactType<_LocalizationsScope>() or dependOnInheritedElement() was called before _SettlementScreenState.initState() completed.`
+*   **Root Cause:** Calling `AppLocalizations.of(context)` inside `initState()` in `_SettlementScreenState` attempts to look up inherited localization widgets before the element tree state initialization is finalized. Flutter explicitly forbids registering inherited widget dependencies during `initState()`.
+*   **Solution:** Removed the `AppLocalizations.of(context)` call from `initState()` in `lib/screens/settlement_screen.dart`. Replaced `_calcSteps` with a helper method `_getCalcSteps(l10n)` called inside `build()`, where inherited context lookup is safe and expected.
+
 

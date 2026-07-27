@@ -80,10 +80,15 @@ void main() async {
     );
 
     // Register the periodic task for closed-app logging
+    // IMPORTANT: Use 'keep' policy so re-launching the app does NOT reset the timer.
+    // Without this, every app open replaces the task, pushing the 15-min window forward
+    // and preventing the task from ever actually firing.
     await Workmanager().registerPeriodicTask(
       "1",
       "background_log_check",
       frequency: const Duration(minutes: 15),
+      initialDelay: const Duration(minutes: 2),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
       constraints: Constraints(
         networkType: NetworkType.notRequired,
       ),

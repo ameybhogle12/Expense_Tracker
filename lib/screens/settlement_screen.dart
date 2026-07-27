@@ -20,7 +20,15 @@ class _SettlementScreenState extends State<SettlementScreen>
   int _calcStep = 0;
   Timer? _calcTimer;
 
-  late List<String> _calcSteps;
+  List<String> _getCalcSteps(AppLocalizations l10n) {
+    return [
+      l10n.analyzingExpenses,
+      l10n.runningDebtOptimization,
+      l10n.calculatingBalances,
+      l10n.optimizingTransfers,
+      l10n.done,
+    ];
+  }
 
   @override
   void initState() {
@@ -31,14 +39,6 @@ class _SettlementScreenState extends State<SettlementScreen>
     );
 
     final provider = context.read<SplitProvider>();
-    final l10n = AppLocalizations.of(context)!;
-    _calcSteps = [
-      l10n.analyzingExpenses,
-      l10n.runningDebtOptimization,
-      l10n.calculatingBalances,
-      l10n.optimizingTransfers,
-      l10n.done,
-    ];
 
     // Settlement results are computed instantly; the loader is purely a
     // first-impression flourish. Only play it the first time a trip's
@@ -56,7 +56,7 @@ class _SettlementScreenState extends State<SettlementScreen>
     _calcTimer = Timer.periodic(const Duration(milliseconds: 700), (timer) {
       if (mounted) {
         setState(() {
-          if (_calcStep < _calcSteps.length - 1) {
+          if (_calcStep < 4) {
             _calcStep++;
           } else {
             timer.cancel();
@@ -78,6 +78,7 @@ class _SettlementScreenState extends State<SettlementScreen>
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
+    final calcSteps = _getCalcSteps(l10n);
     if (_isCalculating) {
       return Scaffold(
         appBar: AppBar(
@@ -128,7 +129,7 @@ class _SettlementScreenState extends State<SettlementScreen>
                   ),
                 ),
                 child: Text(
-                  _calcSteps[_calcStep],
+                  calcSteps[_calcStep],
                   key: ValueKey(_calcStep),
                   style: const TextStyle(
                     fontSize: 16,

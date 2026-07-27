@@ -8,6 +8,7 @@ import '../models/split_trip_model.dart';
 import '../models/split_expense_model.dart';
 import '../widgets/animations.dart';
 import 'settlement_screen.dart';
+import 'itemized_splitter_screen.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
 
 class SplitDetailScreen extends StatelessWidget {
@@ -312,7 +313,7 @@ class SplitDetailScreen extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddExpenseDialog(context, trip),
+        onPressed: () => _showAddExpenseOptionsSheet(context, trip),
         child: const Icon(Icons.add),
       ),
     );
@@ -345,6 +346,171 @@ class SplitDetailScreen extends StatelessWidget {
               SmoothPageRoute(page: SettlementScreen(tripId: tripId)),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showAddExpenseOptionsSheet(BuildContext context, SplitTripModel trip) {
+    final colorScheme = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Add Expense to Trip',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Choose how you want to split this expense:',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Option 1: Standard Split
+                InkWell(
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showAddExpenseDialog(context, trip);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primaryContainer,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.calculate_outlined,
+                              color: colorScheme.onPrimaryContainer),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Standard Split',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold, fontSize: 15),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Enter total amount & divide equally among selected members',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurface.withOpacity(0.6)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            color: colorScheme.onSurface.withOpacity(0.4)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // Option 2: Itemized Bill Splitter
+                InkWell(
+                  onTap: () async {
+                    Navigator.pop(ctx);
+                    final result = await Navigator.push(
+                      context,
+                      SmoothPageRoute(page: ItemizedSplitterScreen(trip: trip)),
+                    );
+                    if (result == 'open_equal_split' && context.mounted) {
+                      _showAddExpenseDialog(context, trip);
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colorScheme.primary.withOpacity(0.4)),
+                      color: colorScheme.primaryContainer.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.secondaryContainer,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.receipt_long_outlined,
+                              color: colorScheme.onSecondaryContainer),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    'Itemized Bill Splitter',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold, fontSize: 15),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Text(
+                                      'NEW',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Add individual items (pastries, drinks) with tax & tip',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurface.withOpacity(0.6)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(Icons.chevron_right,
+                            color: colorScheme.onSurface.withOpacity(0.4)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

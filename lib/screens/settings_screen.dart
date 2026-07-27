@@ -1,5 +1,7 @@
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import '../providers/theme_provider.dart';
@@ -31,6 +33,9 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   late bool _useBiometrics;
   late bool _autoLoggingEnabled;
+  bool _isBatteryOptimized = true; // Assume optimized (bad) until checked
+
+  static const _channel = MethodChannel('com.ameybhogle.expensetracker/payment_detection');
 
   @override
   void initState() {
@@ -38,6 +43,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final box = Hive.box('settings_v1');
     _useBiometrics = box.get('useBiometrics', defaultValue: false);
     _autoLoggingEnabled = box.get('auto_logging_enabled', defaultValue: false);
+    _checkBatteryOptimization();
+  }
+
+  Future<void> _checkBatteryOptimization() async {
+    if (kIsWeb || !Platform.isAndroid) return;
+    try {
+      final bool isOptimized = await _channel.invokeMethod('isBatteryOptimized');
+      if (mounted) {
+        setState(() {
+          _isBatteryOptimized = isOptimized;
+        });
+      }
+    } catch (_) {
+      // Silently handle — MethodChannel may not be available
+    }
+  }
+
+  Future<void> _requestBatteryOptimization() async {
+    try {
+      await _channel.invokeMethod('requestBatteryOptimization');
+      // Re-check after the user returns from the system settings
+      await Future.delayed(const Duration(seconds: 2));
+      await _checkBatteryOptimization();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not open battery settings. Please disable battery optimization manually in system settings.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   void _toggleBiometrics(bool value) async {
@@ -414,6 +452,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 value: _autoLoggingEnabled,
                 onChanged: _toggleAutoLogging,
                 secondary: _buildIconContainer(Icons.notification_important_outlined, Colors.deepOrange),
+              ),
+              const Divider(height: 1, indent: 64),
+              ListTile(
+                title: const Text('Battery Optimization'),
+                subtitle: Text(
+                  _isBatteryOptimized
+                      ? 'Restricted — notifications may not work in background'
+                      : 'Unrestricted — background notifications enabled ✓',
+                ),
+                leading: _buildIconContainer(
+                  _isBatteryOptimized ? Icons.battery_alert : Icons.battery_full,
+                  _isBatteryOptimized ? Colors.red : Colors.green,
+                ),
+                trailing: _isBatteryOptimized
+                    ? FilledButton.tonal(
+                        onPressed: _requestBatteryOptimization,
+                        child: const Text('Fix'),
+                      )
+                    : const Icon(Icons.check_circle, color: Colors.green),
+                onTap: _isBatteryOptimized ? _requestBatteryOptimization : null,
               ),
               const Divider(height: 1, indent: 64),
             ],
