@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(/c/Users/ameyb/AppData/Local/Android/Sdk/platform-tools/adb.exe -s YTOBRW7TBUGEIRFQ shell settings get secure enabled_notification_listeners)",
+      "Bash(/c/Users/ameyb/AppData/Local/Android/Sdk/platform-tools/adb.exe -s YTOBRW7TBUGEIRFQ shell dumpsys notification --noredact)",
+      "Bash(/c/Users/ameyb/AppData/Local/Android/Sdk/platform-tools/adb.exe -s YTOBRW7TBUGEIRFQ logcat -d -v time -s CustomNotifListener)"
+    ]
+  }
+}

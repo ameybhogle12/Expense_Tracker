@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:audioplayers/audioplayers.dart';
 import '../models/split_trip_model.dart';
 import '../models/split_expense_model.dart';
 import '../providers/split_provider.dart';
@@ -31,6 +32,7 @@ class ItemizedSplitterScreen extends StatefulWidget {
 
 class _ItemizedSplitterScreenState extends State<ItemizedSplitterScreen> {
   int _selectedModeIndex = 0; // 0: Quick Mode, 1: Fun Mode
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   late String _paidBy;
   final List<BillItem> _items = [];
@@ -51,6 +53,8 @@ class _ItemizedSplitterScreenState extends State<ItemizedSplitterScreen> {
 
   @override
   void dispose() {
+    _audioPlayer.stop();
+    _audioPlayer.dispose();
     _taxController.dispose();
     _tipController.dispose();
     _itemNameController.dispose();
@@ -347,10 +351,21 @@ class _ItemizedSplitterScreenState extends State<ItemizedSplitterScreen> {
                 ),
               ],
               selected: {_selectedModeIndex},
-              onSelectionChanged: (newSelection) {
+              onSelectionChanged: (newSelection) async {
+                final newIndex = newSelection.first;
                 setState(() {
-                  _selectedModeIndex = newSelection.first;
+                  _selectedModeIndex = newIndex;
                 });
+                if (newIndex == 1) {
+                  try {
+                    await _audioPlayer.stop();
+                    await _audioPlayer.play(AssetSource('meme/gta-san-andreas-male-panic-crying-scream.mp3'));
+                  } catch (_) {}
+                } else {
+                  try {
+                    await _audioPlayer.stop();
+                  } catch (_) {}
+                }
               },
             ),
           ),
@@ -659,7 +674,7 @@ class _ItemizedSplitterScreenState extends State<ItemizedSplitterScreen> {
             ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Image.asset(
-                'assets/icon/Wait_Guys.png',
+                'assets/meme/Wait_Guys.png',
                 height: 220,
                 fit: BoxFit.contain,
                 errorBuilder: (ctx, err, stack) {

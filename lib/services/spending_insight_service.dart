@@ -38,6 +38,34 @@ class SpendingInsightService {
         if (now.hour < 18) return false;
       }
 
+      final insight = await computeInsight();
+      if (insight == null) return false;
+
+      await NotificationService().showInsightNotification(
+        title: insight.title,
+        body: insight.body,
+      );
+      if (!force) {
+        await settingsBox.put('lastInsightSentDate', todayStr);
+      }
+      return true;
+    } catch (e) {
+      // Never crash the background processor
+      return false;
+    }
+  }
+
+  /// Evaluates the current spending data and returns the insight that would be
+  /// sent right now, or `null` if there is nothing worth saying.
+  ///
+  /// Split out from [checkAndNotify] so [NotificationScheduler] can pre-compute
+  /// the copy for an AlarmManager-backed notification, whose body has to be
+  /// fixed at scheduling time.
+  static Future<InsightMessage?> computeInsight() async {
+    try {
+      final settingsBox = await Hive.openBox('settings_v1');
+      final now = DateTime.now();
+
       final expenseBox = await Hive.openBox<ExpenseModel>(ExpenseProvider.expenseBoxName);
       final budgetBox = await Hive.openBox<BudgetModel>(ExpenseProvider.budgetBoxName);
 
@@ -53,42 +81,21 @@ class SpendingInsightService {
           .where((e) => e.date.year == now.year && e.date.month == now.month)
           .toList();
 
-      if (monthExpenses.isEmpty) return false; // No spending data, no insight
+      if (monthExpenses.isEmpty) return null; // No spending data, no insight
 
       // --- TIER 1: Budget Alerts (highest priority) ---
       final budgetInsight = _checkBudgets(monthExpenses, budgets, currencySymbol);
-      if (budgetInsight != null) {
-        await NotificationService().showInsightNotification(
-          title: budgetInsight.title,
-          body: budgetInsight.body,
-        );
-        if (!force) {
-          await settingsBox.put('lastInsightSentDate', todayStr);
-        }
-        return true;
-      }
+      if (budgetInsight != null) return budgetInsight;
 
       // --- TIER 2: Smart Pattern Insights ---
-      final patternInsight = _analyzePatterns(allExpenses, monthExpenses, now, currencySymbol);
-      if (patternInsight != null) {
-        await NotificationService().showInsightNotification(
-          title: patternInsight.title,
-          body: patternInsight.body,
-        );
-        if (!force) {
-          await settingsBox.put('lastInsightSentDate', todayStr);
-        }
-        return true;
-      }
-      return false;
+      return _analyzePatterns(allExpenses, monthExpenses, now, currencySymbol);
     } catch (e) {
-      // Never crash the background processor
-      return false;
+      return null;
     }
   }
 
   /// Tier 1: Check budget thresholds (80% warning, 100% exceeded)
-  static _InsightMessage? _checkBudgets(
+  static InsightMessage? _checkBudgets(
     List<ExpenseModel> monthExpenses,
     List<BudgetModel> budgets,
     String currencySymbol,
@@ -103,8 +110,8 @@ class SpendingInsightService {
     }
 
     // Check for exceeded budgets first (highest priority), then warnings
-    _InsightMessage? exceededInsight;
-    _InsightMessage? warningInsight;
+    InsightMessage? exceededInsight;
+    InsightMessage? warningInsight;
 
     for (var budget in budgets) {
       final spent = categorySpending[budget.category] ?? 0;
@@ -112,12 +119,12 @@ class SpendingInsightService {
 
       if (percentage >= 100 && exceededInsight == null) {
         final overBy = spent - budget.monthlyLimit;
-        exceededInsight = _InsightMessage(
+        exceededInsight = InsightMessage(
           title: '🚨 Budget Exceeded!',
           body: 'You\'ve spent $currencySymbol${_formatAmount(spent)} on ${budget.category} — $currencySymbol${_formatAmount(overBy)} over your $currencySymbol${_formatAmount(budget.monthlyLimit)} limit.',
         );
       } else if (percentage >= 80 && percentage < 100 && warningInsight == null) {
-        warningInsight = _InsightMessage(
+        warningInsight = InsightMessage(
           title: '⚠️ Budget Alert',
           body: 'Heads up! You\'ve used $percentage% of your ${budget.category} budget ($currencySymbol${_formatAmount(spent)} of $currencySymbol${_formatAmount(budget.monthlyLimit)}).',
         );
@@ -128,7 +135,7 @@ class SpendingInsightService {
   }
 
   /// Tier 2: Analyze spending patterns for users without budgets (or no budget alerts)
-  static _InsightMessage? _analyzePatterns(
+  static InsightMessage? _analyzePatterns(
     List<ExpenseModel> allExpenses,
     List<ExpenseModel> monthExpenses,
     DateTime now,
@@ -154,7 +161,7 @@ class SpendingInsightService {
 
     if (lastWeekTotal > 0 && thisWeekTotal > lastWeekTotal * 1.3) {
       final increase = ((thisWeekTotal - lastWeekTotal) / lastWeekTotal * 100).round();
-      return _InsightMessage(
+      return InsightMessage(
         title: '📈 Spending Spike',
         body: 'Your spending this week ($currencySymbol${_formatAmount(thisWeekTotal)}) is $increase% higher than last week. Want to review?',
       );
@@ -174,7 +181,7 @@ class SpendingInsightService {
       // Only show if spending is significant (at least 3 transactions in the category)
       final topCategoryCount = thisWeekExpenses.where((e) => e.category == topCategory.key).length;
       if (topCategoryCount >= 3) {
-        return _InsightMessage(
+        return InsightMessage(
           title: '📊 Weekly Spending Insight',
           body: 'This week you spent $currencySymbol${_formatAmount(topCategory.value)} on ${topCategory.key} — your biggest category. Consider setting a budget!',
         );
@@ -189,7 +196,7 @@ class SpendingInsightService {
 
       // Only warn if projected is significantly higher than actual so far
       if (projectedTotal > monthTotal * 1.5 && monthTotal > 0) {
-        return _InsightMessage(
+        return InsightMessage(
           title: '💡 Monthly Pace',
           body: 'You\'ve spent $currencySymbol${_formatAmount(monthTotal)} in the first ${now.day} days. At this pace, you\'ll spend $currencySymbol${_formatAmount(projectedTotal)} this month.',
         );
@@ -208,9 +215,9 @@ class SpendingInsightService {
   }
 }
 
-class _InsightMessage {
+class InsightMessage {
   final String title;
   final String body;
 
-  _InsightMessage({required this.title, required this.body});
+  InsightMessage({required this.title, required this.body});
 }

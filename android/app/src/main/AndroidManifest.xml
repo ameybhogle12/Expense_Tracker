@@ -40,6 +40,27 @@
             </intent-filter>
         </service>
 
+        <!-- flutter_local_notifications does NOT declare these in its own manifest
+             (v16+ ships only POST_NOTIFICATIONS/VIBRATE). Without them, AlarmManager
+             fires on schedule but there is no receiver to actually post the
+             notification, so nothing appears while the app is closed. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver"
+            android:exported="false" />
+
+        <!-- Re-arms every pending scheduled notification after a reboot or an
+             app update. Alarms do not survive either event on their own. -->
+        <receiver
+            android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

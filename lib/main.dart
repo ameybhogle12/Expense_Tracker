@@ -4,6 +4,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:workmanager/workmanager.dart';
 import 'services/notification_service.dart';
+import 'services/notification_scheduler.dart';
 import 'services/log_processor.dart';
 import 'services/notification_tracker.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -54,6 +55,11 @@ void callbackDispatcher() {
 
       await NotificationService().init();
       await LogProcessor.processAll(isBackground: true);
+
+      // Refresh the AlarmManager-backed reminders while we happen to be awake.
+      // This is a top-up, not the delivery mechanism: the alarms already armed
+      // by the UI fire on their own even if this task never runs.
+      await NotificationScheduler.rearmAll();
 
       return Future.value(true);
     } catch (e) {
@@ -125,6 +131,11 @@ void main() async {
     if (autoLoggingEnabled) {
       NotificationTracker().startListening();
     }
+
+    // Arm the OS-level alarms now that the Hive boxes are open. Deliberately not
+    // awaited: it only touches the notification plugin and must not delay first
+    // frame. ExpenseProvider re-arms on every pause/resume from here on.
+    NotificationScheduler.rearmAll();
   }
 
   runApp(

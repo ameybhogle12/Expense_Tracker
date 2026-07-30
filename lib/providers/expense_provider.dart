@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../services/log_processor.dart';
+import '../services/notification_scheduler.dart';
 import '../models/expense_model.dart';
 import '../models/budget_model.dart';
 import '../models/subscription_model.dart';
@@ -45,8 +46,14 @@ class ExpenseProvider with ChangeNotifier, WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _syncAutomatedLogs(isBackground: false);
       _startLiveTimer(); // Restart timer on resume
+      NotificationScheduler.rearmAll();
     } else if (state == AppLifecycleState.paused) {
       _liveTimer?.cancel();
+      // Last chance to hand fresh reminders to AlarmManager: from here the
+      // process may be killed at any moment, and once it is, nothing in Dart
+      // runs again until the user relaunches. The alarms armed here are what
+      // actually deliver notifications while the app is closed.
+      NotificationScheduler.rearmAll();
     }
   }
 
