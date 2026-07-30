@@ -54,7 +54,6 @@ app.*.map.json
 /ios/Runner/GeneratedPluginRegistrant.m
 /ios/Runner/GeneratedPluginRegistrant.swift
 /android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java
-/lib/generated_plugin_registrant.dart
 /macos/Flutter/GeneratedPluginRegistrant.h
 /macos/Flutter/GeneratedPluginRegistrant.m
 /macos/Flutter/GeneratedPluginRegistrant.swift
