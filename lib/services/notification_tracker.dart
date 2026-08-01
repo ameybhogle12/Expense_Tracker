@@ -80,7 +80,7 @@ class NotificationTracker {
     final content = event.content;
 
     final textToParse = "$title $content";
-    if (!_isTransactionMessage(textToParse, package)) {
+    if (!isTransactionMessage(textToParse, package)) {
       return;
     }
 
@@ -168,63 +168,49 @@ class NotificationTracker {
     }
   }
 
-  /// Determines if a notification matches typical transaction trigger words.
-  bool _isTransactionMessage(String text, String package) {
+  /// Determines if a notification represents a completed outgoing payment.
+  ///
+  /// Kept in sync with `isTransactionMessage` in
+  /// android/app/src/main/kotlin/.../CustomNotificationListener.kt.
+  /// Change both together.
+  static bool isTransactionMessage(String text, String package) {
     final lowerText = text.toLowerCase();
-    
-    // Exclude credit/income keywords (we only track expenses/spending)
-    final creditTriggers = [
-      'credited',
-      'received',
-      'refund',
-      'deposited',
-      'added',
-      'credit',
-    ];
-    for (var trigger in creditTriggers) {
-      if (lowerText.contains(trigger)) {
-        return false;
-      }
-    }
 
-    // Check for common financial package names
-    final knownFinPackages = [
-      'com.google.android.apps.nbu.paisa.user', // GPay
-      'net.one97.paytm', // Paytm
-      'com.phonepe.app', // PhonePe
-      'in.org.npci.upiapp', // BHIM
+    // 1. A reminder, request, offer or failure is not a completed spend.
+    //    Checked first, for every package. GPay pushes bill-due reminders that
+    //    carry an amount ("Due date for Adani Electricity bill approaching /
+    //    Rs.250.00 due on Aug 5, 2026"), and the old rule — known finance
+    //    package + contains any digit — logged those as real payments.
+    const notAPayment = [
+      'due date', 'is due', 'due on', 'due by', 'upcoming', 'reminder',
+      'will be debited', 'will be deducted', 'scheduled', 'autopay',
+      'requesting', 'has requested', 'payment request', 'collect request',
+      'failed', 'declined', 'unsuccessful', 'cancelled', 'reversed',
+      'offer', 'cashback', 'reward', 'scratch card', 'you won', 'voucher',
+      'otp', 'code', 'verification', 'verify',
     ];
+    if (notAPayment.any(lowerText.contains)) return false;
 
-    if (knownFinPackages.contains(package)) {
-      if (!lowerText.contains('otp') && !lowerText.contains('code') && !lowerText.contains('verification')) {
-        // Must contain at least a number to be considered a potential transaction
-        return RegExp(r'\d').hasMatch(lowerText);
-      }
+    // 2. Money coming in is not a spend. Word-bounded so that a genuine
+    //    "paid Rs.500 via credit card" is not mistaken for a credit.
+    const creditTriggers = [
+      'credited', 'received', 'refund', 'deposited', 'added',
+    ];
+    if (creditTriggers.any((t) => RegExp('\\b$t').hasMatch(lowerText))) {
       return false;
     }
 
-    // Keyword checks (e.g. UPI, debited, paid, spent)
-    final triggers = [
-      'debited',
-      'sent to',
-      'paid to',
-      'spent',
-      'txn',
-      'transaction',
-      'payment of',
-      'withdrawn',
-    ];
+    // 3. Require evidence of a completed outgoing payment.
+    //    The amount routinely sits between the verb and the payee — e.g.
+    //    "Sent Rs.40.00 from A/c *6394 on 01-08-26 to MUMBAI METRO ONE" — so
+    //    matching the contiguous phrase "sent to" misses real debits. That
+    //    exact Indian Bank format produced no notification at all.
+    final debitVerb =
+        RegExp(r'\b(?:debited|withdrawn|paid|sent|spent|transferred|trf)\b');
+    if (debitVerb.hasMatch(lowerText)) return true;
 
-    for (var trigger in triggers) {
-      if (lowerText.contains(trigger)) {
-        // Exclude OTPs or security codes
-        if (!lowerText.contains('otp') && !lowerText.contains('code') && !lowerText.contains('verification')) {
-          return true;
-        }
-      }
-    }
-
-    return false;
+    // Some issuers only ever say "txn" / "transaction" / "payment of".
+    return const ['txn', 'transaction', 'payment of'].any(lowerText.contains);
   }
 
   /// Parses transaction amount and merchant from notification text.
@@ -244,39 +230,78 @@ class NotificationTracker {
     // "sent to [Merchant] using..."
     // "txn of Rs.500.00 at [Merchant]..."
     // "debited to [Merchant]..."
-    String? merchant;
-    final merchantRegexes = [
-      RegExp(r'(?:paid|sent|transferr?ed)\s+to\s+([^.]+?)(?:\s+on|\s+using|\s+at|\s+from|\s+ref|\.)', caseSensitive: false),
-      RegExp(r'at\s+([^.]+?)(?:\s+on|\s+using|\s+from|\s+ref|\.)', caseSensitive: false),
-      RegExp(r'debited\s+to\s+([^.]+?)(?:\s+on|\s+using|\s+from|\s+ref|\.)', caseSensitive: false),
+    return ParsedTx(amount: amount, merchant: extractPayee(text));
+  }
+
+  /// Pulls a human-readable payee name out of a transaction message.
+  ///
+  /// Kept in sync with `extractPayee` in
+  /// android/app/src/main/kotlin/.../CustomNotificationListener.kt — the native
+  /// listener is what posts the notification on the free build, this Dart copy
+  /// is used when auto-logging is on. Change both together.
+  ///
+  /// Returning null is deliberate: the old catch-all "(to|at) <anything>" regex
+  /// matched the first "to" anywhere in the string, which on a real SVC Bank
+  /// message yielded the STOPUPI helpline number instead of the payee. No name
+  /// beats a wrong name.
+  static String? extractPayee(String text) {
+    final patterns = [
+      // NPCI remittance format, passed through by most Indian banks:
+      //   "... CR UPI/DR/127097027155/AKANKSHA A."
+      RegExp(r'UPI[/-](?:DR|CR)[/-]\d+[/-]([A-Za-z][A-Za-z\s]{1,39}?)(?=[.,/]|\s+(?:Ref|Not|SMS|Call)|$)',
+          caseSensitive: false),
+      // SBI style: "... trf to AKANKSHA A Refno 127097027155"
+      RegExp(r'(?:trf|transfer(?:red)?)\s+to\s+([A-Za-z][A-Za-z\s]{1,39}?)(?=\s+(?:refno|ref|on\s+\d|on\s+date|via|using|upi)|[.,]|$)',
+          caseSensitive: false),
+      // "Paid Rs.10 to Akanksha Aher on 30-07" — the amount sits between the
+      // verb and "to", which a literal "paid to" match cannot catch.
+      RegExp(r'(?:paid|sent|debited)\b.{0,40}?\bto\s+([A-Za-z][A-Za-z\s]{1,39}?)(?=\s+(?:refno|ref|on\s+\d|on\s+date|via|using|upi)|[.,?]|$)',
+          caseSensitive: false),
+      // "... to VPA akanksha@okaxis" — fall back to the handle's local part
+      RegExp(r'VPA\s+([\w.\-]+)@[\w]+', caseSensitive: false),
+      // Card / POS: "spent Rs.500 at AMAZON on 30-07"
+      RegExp(r'\bat\s+([A-Za-z][A-Za-z0-9\s&.\-]{2,39}?)(?=\s+(?:on\s+\d|on\s+date|ref|using|via)|[.,]|$)',
+          caseSensitive: false),
     ];
 
-    for (var regex in merchantRegexes) {
-      final merchantMatch = regex.firstMatch(text);
-      if (merchantMatch != null) {
-        final rawMerchant = merchantMatch.group(1)?.trim();
-        if (rawMerchant != null && rawMerchant.isNotEmpty && rawMerchant.length < 50) {
-          // Avoid matching clean words like "your account" or "HDFC"
-          if (!rawMerchant.toLowerCase().contains('your account') &&
-              !rawMerchant.toLowerCase().contains('a/c')) {
-            merchant = rawMerchant;
-            break;
-          }
-        }
+    for (final pattern in patterns) {
+      final match = pattern.firstMatch(text);
+      if (match == null) continue;
+
+      final candidate = match
+          .group(1)
+          ?.trim()
+          .replaceAll(RegExp(r'^[.,\-\s]+|[.,\-\s]+$'), '');
+      if (candidate != null && candidate.isNotEmpty && _isPlausibleName(candidate)) {
+        return _toTitleCase(candidate);
       }
     }
-
-    // Fallback: If no merchant found, try matching everything after "to" up to 20 chars
-    if (merchant == null) {
-      final fallbackRegex = RegExp(r'(?:to|at)\s+([A-Za-z0-9\s&]{3,20})', caseSensitive: false);
-      final fallbackMatch = fallbackRegex.firstMatch(text);
-      if (fallbackMatch != null) {
-        merchant = fallbackMatch.group(1)?.trim();
-      }
-    }
-
-    return ParsedTx(amount: amount, merchant: merchant);
+    return null;
   }
+
+  /// Rejects reference numbers, helpline numbers and bank boilerplate.
+  static bool _isPlausibleName(String candidate) {
+    if (candidate.length < 3 || candidate.length > 40) return false;
+
+    final letters = RegExp(r'[A-Za-z]').allMatches(candidate).length;
+    final digits = RegExp(r'\d').allMatches(candidate).length;
+    if (letters < 2 || digits > letters) return false;
+
+    final lower = candidate.toLowerCase();
+    const noise = [
+      'your account', 'a/c', 'account', 'bank', 'upi', 'vpa', 'call',
+      'sms', 'stopupi', 'not you', 'avl bal', 'clr bal', 'bal',
+    ];
+    return !noise.any((n) => lower == n || lower.startsWith('$n '));
+  }
+
+  /// "AKANKSHA A" -> "Akanksha A", so the notification doesn't shout.
+  static String _toTitleCase(String raw) => raw
+      .split(RegExp(r'\s+'))
+      .map((w) => w.length <= 1
+          ? w.toUpperCase()
+          : w[0].toUpperCase() + w.substring(1).toLowerCase())
+      .join(' ');
 }
 
 class ParsedTx {

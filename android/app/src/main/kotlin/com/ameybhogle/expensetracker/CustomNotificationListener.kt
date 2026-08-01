@@ -82,49 +82,37 @@ class CustomNotificationListener : NotificationListener() {
     private fun isTransactionMessage(text: String, packageName: String): Boolean {
         val lowerText = text.lowercase()
 
-        // Exclude credit/income keywords (only track expenses)
-        val creditTriggers = listOf("credited", "received", "refund", "deposited", "added", "credit")
-        for (trigger in creditTriggers) {
-            if (lowerText.contains(trigger)) return false
-        }
-
-        // Check for common financial package names
-        val knownFinPackages = listOf(
-            "com.google.android.apps.nbu.paisa.user", // GPay
-            "net.one97.paytm", // Paytm
-            "com.phonepe.app", // PhonePe
-            "in.org.npci.upiapp" // BHIM
+        // 1. A reminder, request, offer or failure is not a completed spend.
+        //    This is checked first and applies to every package. GPay pushes
+        //    bill-due reminders that carry an amount ("Due date for Adani
+        //    Electricity bill approaching / Rs.250.00 due on Aug 5, 2026"), and
+        //    the old rule — known finance package + contains any digit — logged
+        //    those as real payments.
+        val notAPayment = listOf(
+            "due date", "is due", "due on", "due by", "upcoming", "reminder",
+            "will be debited", "will be deducted", "scheduled", "autopay",
+            "requesting", "has requested", "payment request", "collect request",
+            "failed", "declined", "unsuccessful", "cancelled", "reversed",
+            "offer", "cashback", "reward", "scratch card", "you won", "voucher",
+            "otp", "code", "verification", "verify"
         )
+        if (notAPayment.any { lowerText.contains(it) }) return false
 
-        if (knownFinPackages.contains(packageName)) {
-            if (!lowerText.contains("otp") && !lowerText.contains("code") && !lowerText.contains("verification")) {
-                // Must contain at least a digit
-                return lowerText.any { it.isDigit() }
-            }
-            return false
-        }
+        // 2. Money coming in is not a spend. Word-bounded so that a genuine
+        //    "paid Rs.500 via credit card" is not mistaken for a credit.
+        val creditTriggers = listOf("credited", "received", "refund", "deposited", "added")
+        if (creditTriggers.any { Regex("\\b$it").containsMatchIn(lowerText) }) return false
 
-        // Keyword checks
-        val triggers = listOf(
-            "debited",
-            "sent to",
-            "paid to",
-            "spent",
-            "txn",
-            "transaction",
-            "payment of",
-            "withdrawn"
-        )
+        // 3. Require evidence of a completed outgoing payment.
+        //    The amount routinely sits between the verb and the payee — e.g.
+        //    "Sent Rs.40.00 from A/c *6394 on 01-08-26 to MUMBAI METRO ONE" —
+        //    so matching the contiguous phrase "sent to" misses real debits.
+        //    That exact Indian Bank format produced no notification at all.
+        val debitVerb = Regex("\\b(?:debited|withdrawn|paid|sent|spent|transferred|trf)\\b")
+        if (debitVerb.containsMatchIn(lowerText)) return true
 
-        for (trigger in triggers) {
-            if (lowerText.contains(trigger)) {
-                if (!lowerText.contains("otp") && !lowerText.contains("code") && !lowerText.contains("verification")) {
-                    return true
-                }
-            }
-        }
-
-        return false
+        // Some issuers only ever say "txn" / "transaction" / "payment of".
+        return listOf("txn", "transaction", "payment of").any { lowerText.contains(it) }
     }
 
     private fun parseTransaction(text: String): ParsedTx? {
@@ -138,39 +126,74 @@ class CustomNotificationListener : NotificationListener() {
         val amountStr = matcher.group(2)?.replace(",", "") ?: ""
         val amount = amountStr.toDoubleOrNull() ?: return null
 
-        var merchant: String? = null
-        val merchantRegexes = listOf(
-            Pattern.compile("(?:paid|sent|transferred)\\s+to\\s+([^.]+?)(?:\\s+on|\\s+using|\\s+at|\\s+from|\\s+ref|\\.)", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("at\\s+([^.]+?)(?:\\s+on|\\s+using|\\s+from|\\s+ref|\\.)", Pattern.CASE_INSENSITIVE),
-            Pattern.compile("debited\\s+to\\s+([^.]+?)(?:\\s+on|\\s+using|\\s+from|\\s+ref|\\.)", Pattern.CASE_INSENSITIVE)
+        return ParsedTx(amount, extractPayee(text), currencySymbol)
+    }
+
+    /**
+     * Pulls a human-readable payee name out of a transaction message.
+     *
+     * Bank SMS formats vary, so this runs an ordered list of patterns — most
+     * specific first — and returns the first candidate that actually looks like
+     * a name.
+     *
+     * Returning null is a deliberate, valid outcome. The previous catch-all
+     * regex "(to|at) <anything>" grabbed the first "to" anywhere in the string,
+     * which on a real SVC Bank message meant the STOPUPI helpline number rather
+     * than the payee. Showing no name is strictly better than showing a wrong
+     * one, so anything that fails [isPlausibleName] is dropped.
+     */
+    private fun extractPayee(text: String): String? {
+        val patterns = listOf(
+            // NPCI remittance format, passed through by most Indian banks:
+            //   "... CR UPI/DR/127097027155/AKANKSHA A."
+            Pattern.compile("""UPI[/-](?:DR|CR)[/-]\d+[/-]([A-Za-z][A-Za-z\s]{1,39}?)(?=[.,/]|\s+(?:Ref|Not|SMS|Call)|$)""", Pattern.CASE_INSENSITIVE),
+            // SBI style: "... trf to AKANKSHA A Refno 127097027155"
+            Pattern.compile("""(?:trf|transfer(?:red)?)\s+to\s+([A-Za-z][A-Za-z\s]{1,39}?)(?=\s+(?:refno|ref|on\s+\d|on\s+date|via|using|upi)|[.,]|$)""", Pattern.CASE_INSENSITIVE),
+            // "Paid Rs.10 to Akanksha Aher on 30-07" — the amount sits between
+            // the verb and "to", which a literal "paid to" match cannot catch.
+            Pattern.compile("""(?:paid|sent|debited)\b.{0,40}?\bto\s+([A-Za-z][A-Za-z\s]{1,39}?)(?=\s+(?:refno|ref|on\s+\d|on\s+date|via|using|upi)|[.,?]|$)""", Pattern.CASE_INSENSITIVE),
+            // "... to VPA akanksha@okaxis" — fall back to the handle's local part
+            Pattern.compile("""VPA\s+([\w.\-]+)@[\w]+""", Pattern.CASE_INSENSITIVE),
+            // Card / POS: "spent Rs.500 at AMAZON on 30-07"
+            Pattern.compile("""\bat\s+([A-Za-z][A-Za-z0-9\s&.\-]{2,39}?)(?=\s+(?:on\s+\d|on\s+date|ref|using|via)|[.,]|$)""", Pattern.CASE_INSENSITIVE)
         )
 
-        for (pattern in merchantRegexes) {
-            val merchantMatcher = pattern.matcher(text)
-            if (merchantMatcher.find()) {
-                val rawMerchant = merchantMatcher.group(1)?.trim()
-                if (!rawMerchant.isNullOrEmpty() && rawMerchant.length < 50) {
-                    if (!rawMerchant.lowercase().contains("your account") &&
-                        !rawMerchant.lowercase().contains("a/c")) {
-                        merchant = rawMerchant
-                        break
-                    }
+        for (pattern in patterns) {
+            val matcher = pattern.matcher(text)
+            if (matcher.find()) {
+                val candidate = matcher.group(1)?.trim()?.trim('.', ',', '-')
+                if (!candidate.isNullOrEmpty() && isPlausibleName(candidate)) {
+                    return toTitleCase(candidate)
                 }
             }
         }
-
-        if (merchant == null) {
-            val fallbackPattern = Pattern.compile("(?:to|at)\\s+([A-Za-z0-9\\s&]{3,20})", Pattern.CASE_INSENSITIVE)
-            val fallbackMatcher = fallbackPattern.matcher(text)
-            if (fallbackMatcher.find()) {
-                merchant = fallbackMatcher.group(1)?.trim()
-            }
-        }
-
-        return ParsedTx(amount, merchant ?: "Merchant", currencySymbol)
+        return null
     }
 
-    private fun showPaymentNotification(amount: Double, merchant: String, currencySymbol: String) {
+    /** Rejects reference numbers, helpline numbers and bank boilerplate. */
+    private fun isPlausibleName(candidate: String): Boolean {
+        if (candidate.length < 3 || candidate.length > 40) return false
+
+        val letters = candidate.count { it.isLetter() }
+        val digits = candidate.count { it.isDigit() }
+        if (letters < 2 || digits > letters) return false
+
+        val lower = candidate.lowercase()
+        val noise = listOf(
+            "your account", "a/c", "account", "bank", "upi", "vpa", "call",
+            "sms", "stopupi", "not you", "avl bal", "clr bal", "bal"
+        )
+        return noise.none { lower == it || lower.startsWith("$it ") }
+    }
+
+    /** "AKANKSHA A" -> "Akanksha A", so the notification doesn't shout. */
+    private fun toTitleCase(raw: String): String =
+        raw.split(Regex("\\s+")).joinToString(" ") { word ->
+            if (word.length <= 1) word.uppercase()
+            else word[0].uppercase() + word.substring(1).lowercase()
+        }
+
+    private fun showPaymentNotification(amount: Double, merchant: String?, currencySymbol: String) {
         val context = applicationContext
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -206,10 +229,17 @@ class CustomNotificationListener : NotificationListener() {
             String.format("%.2f", amount)
         }
 
+        // Only name the payee when one was actually recognised — see extractPayee.
+        val contentText = if (merchant != null) {
+            "Paid $currencySymbol$formattedAmount to $merchant? Tap to log it before you forget!"
+        } else {
+            "Spent $currencySymbol$formattedAmount? Tap to log it before you forget!"
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(com.ameybhogle.expensetracker.R.mipmap.launcher_icon)
             .setContentTitle("💳 Payment Detected")
-            .setContentText("Spent $currencySymbol$formattedAmount at $merchant? Tap to log it before you forget!")
+            .setContentText(contentText)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -218,5 +248,6 @@ class CustomNotificationListener : NotificationListener() {
         notificationManager.notify(NOTIFICATION_ID, notification)
     }
 
-    data class ParsedTx(val amount: Double, val merchant: String, val currencySymbol: String)
+    /** [merchant] is null when no name could be confidently extracted. */
+    data class ParsedTx(val amount: Double, val merchant: String?, val currencySymbol: String)
 }
