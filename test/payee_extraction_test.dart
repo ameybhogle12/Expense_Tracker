@@ -77,14 +77,14 @@ void main() {
     const gpay = 'com.google.android.apps.nbu.paisa.user';
     const messages = 'com.google.android.apps.messaging';
 
-    test('Indian Bank "Sent Rs.X ... to PAYEE" is detected', () {
+    test('Indian Bank "Sent Rs.X ... to PAYEE" is detected as expense', () {
       // Previously missed entirely: the trigger list wanted the contiguous
       // phrase "sent to", but the amount and account sit in between.
       const sms =
           'Sent Rs.40.00 from A/c *6394 on 01-08-26 to MUMBAI METRO ONE.'
           'RRN 657900820238.Avl Bal Rs.3042.16.Not you?SMS BLOCK to '
           '9289592895-Indian Bank';
-      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isFalse);
       expect(NotificationTracker.extractPayee(sms), 'Mumbai Metro One');
     });
 
@@ -93,41 +93,60 @@ void main() {
       const text =
           'Due date for Adani Electricity bill approaching '
           'Rs.250.00 due on Aug 5, 2026.';
-      expect(NotificationTracker.isTransactionMessage(text, gpay), isFalse);
+      expect(NotificationTracker.isTransactionMessage(text, gpay), isNull);
     });
 
-    test('SVC Bank debit still detected (known-good case)', () {
+    test('SVC Bank debit is detected as expense', () {
       const sms =
           'SVC Bank A/c *2765 DEBITED for Rs.10.00 Clr Bal Rs.5,282.34. '
           'CR UPI/DR/127097027155/AKANKSHA A. Not You? SMS STOPUPI to '
           '9820620454 /Call 18003132120';
-      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isFalse);
     });
 
-    test('incoming credit is ignored', () {
+    test('incoming credit is detected as income', () {
       const sms = 'A/c *6394 credited with Rs.500.00 on 01-08-26.';
-      expect(NotificationTracker.isTransactionMessage(sms, messages), isFalse);
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
     });
 
     test('"paid via credit card" is still a spend, not a credit', () {
       // The old substring check matched "credit" inside "credit card".
       const sms = 'Rs.500.00 paid at AMAZON via credit card on 01-08-26.';
-      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isFalse);
     });
 
     test('payment request is not a completed payment', () {
       const text = 'Akanksha is requesting Rs.250.00';
-      expect(NotificationTracker.isTransactionMessage(text, gpay), isFalse);
+      expect(NotificationTracker.isTransactionMessage(text, gpay), isNull);
     });
 
     test('failed payment is not logged', () {
       const sms = 'Your payment of Rs.250.00 to Zepto failed.';
-      expect(NotificationTracker.isTransactionMessage(sms, messages), isFalse);
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isNull);
     });
 
     test('OTP is never a payment', () {
       const sms = 'Your OTP for txn of Rs.500 is 123456.';
-      expect(NotificationTracker.isTransactionMessage(sms, messages), isFalse);
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isNull);
+    });
+  });
+
+  group('isTransactionMessage - income detection', () {
+    const messages = 'com.google.android.apps.messaging';
+
+    test('simple credit is detected as income', () {
+      const sms = 'A/c *2765 is CREDITED for Rs 5,600.00.';
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
+    });
+
+    test('received money is income', () {
+      const sms = 'You received Rs.5,000.00 from Rahul on 02-08-26.';
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
+    });
+
+    test('refund is income', () {
+      const sms = 'Refund of Rs.250.00 processed to your a/c on 02-08-26.';
+      expect(NotificationTracker.isTransactionMessage(sms, messages), isTrue);
     });
   });
 }

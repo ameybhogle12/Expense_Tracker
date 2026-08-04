@@ -41,7 +41,8 @@ class CustomNotificationListener : NotificationListener() {
         val textToParse = "$title $text"
         Log.d(TAG, "Notification received from $packageName: $textToParse")
 
-        if (isTransactionMessage(textToParse, packageName)) {
+        val txType = isTransactionMessage(textToParse, packageName)
+        if (txType != null) {
             val parsed = parseTransaction(textToParse)
             if (parsed != null && parsed.amount > 0) {
                 // Check if auto-logging is globally enabled (develop branch / premium version handles auto-logging)
@@ -73,22 +74,21 @@ class CustomNotificationListener : NotificationListener() {
                     }
                 }
 
-                Log.d(TAG, "Payment detected: Spent ${parsed.currencySymbol}${parsed.amount} at ${parsed.merchant}")
-                showPaymentNotification(parsed.amount, parsed.merchant, parsed.currencySymbol)
+                val action = if (txType) "Received" else "Spent"
+                Log.d(TAG, "Payment detected: $action ${parsed.currencySymbol}${parsed.amount} at ${parsed.merchant}")
+                showPaymentNotification(parsed.amount, parsed.merchant, parsed.currencySymbol, txType)
             }
         }
     }
 
-    private fun isTransactionMessage(text: String, packageName: String): Boolean {
+    /** Returns null if not a transaction, true if income, false if expense.
+     *  Kept in sync with isTransactionMessage in lib/services/notification_tracker.dart. */
+    private fun isTransactionMessage(text: String, packageName: String): Boolean? {
         val lowerText = text.lowercase()
 
-        // 1. A reminder, request, offer or failure is not a completed spend.
-        //    This is checked first and applies to every package. GPay pushes
-        //    bill-due reminders that carry an amount ("Due date for Adani
-        //    Electricity bill approaching / Rs.250.00 due on Aug 5, 2026"), and
-        //    the old rule — known finance package + contains any digit — logged
-        //    those as real payments.
-        val notAPayment = listOf(
+        // 1. A reminder, request, offer or failure is not a completed transaction.
+        //    This is checked first and applies to every package.
+        val notATransaction = listOf(
             "due date", "is due", "due on", "due by", "upcoming", "reminder",
             "will be debited", "will be deducted", "scheduled", "autopay",
             "requesting", "has requested", "payment request", "collect request",
@@ -96,23 +96,25 @@ class CustomNotificationListener : NotificationListener() {
             "offer", "cashback", "reward", "scratch card", "you won", "voucher",
             "otp", "code", "verification", "verify"
         )
-        if (notAPayment.any { lowerText.contains(it) }) return false
+        if (notATransaction.any { lowerText.contains(it) }) return null
 
-        // 2. Money coming in is not a spend. Word-bounded so that a genuine
-        //    "paid Rs.500 via credit card" is not mistaken for a credit.
+        // 2. Money coming in (word-bounded).
         val creditTriggers = listOf("credited", "received", "refund", "deposited", "added")
-        if (creditTriggers.any { Regex("\\b$it").containsMatchIn(lowerText) }) return false
+        if (creditTriggers.any { Regex("\\b$it").containsMatchIn(lowerText) }) return true
 
-        // 3. Require evidence of a completed outgoing payment.
+        // 3. Money going out.
         //    The amount routinely sits between the verb and the payee — e.g.
         //    "Sent Rs.40.00 from A/c *6394 on 01-08-26 to MUMBAI METRO ONE" —
         //    so matching the contiguous phrase "sent to" misses real debits.
-        //    That exact Indian Bank format produced no notification at all.
         val debitVerb = Regex("\\b(?:debited|withdrawn|paid|sent|spent|transferred|trf)\\b")
-        if (debitVerb.containsMatchIn(lowerText)) return true
+        if (debitVerb.containsMatchIn(lowerText)) return false
 
-        // Some issuers only ever say "txn" / "transaction" / "payment of".
-        return listOf("txn", "transaction", "payment of").any { lowerText.contains(it) }
+        // Some issuers only ever say "txn" / "transaction" / "payment of" (default to expense).
+        if (listOf("txn", "transaction", "payment of").any { lowerText.contains(it) }) {
+            return false
+        }
+
+        return null
     }
 
     private fun parseTransaction(text: String): ParsedTx? {
@@ -193,7 +195,7 @@ class CustomNotificationListener : NotificationListener() {
             else word[0].uppercase() + word.substring(1).lowercase()
         }
 
-    private fun showPaymentNotification(amount: Double, merchant: String?, currencySymbol: String) {
+    private fun showPaymentNotification(amount: Double, merchant: String?, currencySymbol: String, isIncome: Boolean) {
         val context = applicationContext
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -213,6 +215,7 @@ class CustomNotificationListener : NotificationListener() {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("amount", amount)
             putExtra("merchant", merchant)
+            putExtra("isIncome", isIncome)
         }
 
         val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -230,15 +233,23 @@ class CustomNotificationListener : NotificationListener() {
         }
 
         // Only name the payee when one was actually recognised — see extractPayee.
-        val contentText = if (merchant != null) {
-            "Paid $currencySymbol$formattedAmount to $merchant? Tap to log it before you forget!"
+        val (title, contentText) = if (isIncome) {
+            "💰 Money Received" to if (merchant != null) {
+                "Got $currencySymbol$formattedAmount from $merchant? Tap to log it!"
+            } else {
+                "Got $currencySymbol$formattedAmount credited? Tap to log it!"
+            }
         } else {
-            "Spent $currencySymbol$formattedAmount? Tap to log it before you forget!"
+            "💳 Payment Detected" to if (merchant != null) {
+                "Paid $currencySymbol$formattedAmount to $merchant? Tap to log it before you forget!"
+            } else {
+                "Spent $currencySymbol$formattedAmount? Tap to log it before you forget!"
+            }
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(com.ameybhogle.expensetracker.R.mipmap.launcher_icon)
-            .setContentTitle("💳 Payment Detected")
+            .setContentTitle(title)
             .setContentText(contentText)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)

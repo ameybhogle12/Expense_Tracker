@@ -20,6 +20,7 @@ import '../providers/locale_provider.dart';
 import 'package:expense_tracker/l10n/app_localizations.dart';
 import '../services/notification_tracker.dart';
 import 'package:notification_listener_service/notification_listener_service.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 
 
@@ -35,6 +36,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _autoLoggingEnabled;
   bool _isBatteryOptimized = true; // Assume optimized (bad) until checked
 
+  /// Read from the platform package at runtime rather than hardcoded — the old
+  /// literal sat at v1.0.6 while the app shipped 1.0.7. Empty until loaded so
+  /// the label renders nothing rather than a stale or placeholder number.
+  String _appVersion = '';
+
   static const _channel = MethodChannel('com.ameybhogle.expensetracker/payment_detection');
 
   @override
@@ -44,6 +50,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _useBiometrics = box.get('useBiometrics', defaultValue: false);
     _autoLoggingEnabled = box.get('auto_logging_enabled', defaultValue: false);
     _checkBatteryOptimization();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() => _appVersion = info.version);
+      }
+    } catch (_) {
+      // Leave the label blank if the platform channel is unavailable.
+    }
   }
 
   Future<void> _checkBatteryOptimization() async {
@@ -256,7 +274,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'v1.0.6 (Free Release)',
+            _appVersion.isEmpty ? '' : 'v$_appVersion (Free Release)',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey.shade600,

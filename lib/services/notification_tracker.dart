@@ -80,8 +80,9 @@ class NotificationTracker {
     final content = event.content;
 
     final textToParse = "$title $content";
-    if (!isTransactionMessage(textToParse, package)) {
-      return;
+    final txType = isTransactionMessage(textToParse, package);
+    if (txType == null) {
+      return; // Not a transaction
     }
 
     try {
@@ -168,20 +169,16 @@ class NotificationTracker {
     }
   }
 
-  /// Determines if a notification represents a completed outgoing payment.
-  ///
+  /// Returns null if not a transaction, or bool: true=income, false=expense.
   /// Kept in sync with `isTransactionMessage` in
   /// android/app/src/main/kotlin/.../CustomNotificationListener.kt.
   /// Change both together.
-  static bool isTransactionMessage(String text, String package) {
+  static bool? isTransactionMessage(String text, String package) {
     final lowerText = text.toLowerCase();
 
-    // 1. A reminder, request, offer or failure is not a completed spend.
-    //    Checked first, for every package. GPay pushes bill-due reminders that
-    //    carry an amount ("Due date for Adani Electricity bill approaching /
-    //    Rs.250.00 due on Aug 5, 2026"), and the old rule — known finance
-    //    package + contains any digit — logged those as real payments.
-    const notAPayment = [
+    // 1. A reminder, request, offer or failure is not a completed transaction.
+    //    Checked first, for every package.
+    const notATransaction = [
       'due date', 'is due', 'due on', 'due by', 'upcoming', 'reminder',
       'will be debited', 'will be deducted', 'scheduled', 'autopay',
       'requesting', 'has requested', 'payment request', 'collect request',
@@ -189,28 +186,27 @@ class NotificationTracker {
       'offer', 'cashback', 'reward', 'scratch card', 'you won', 'voucher',
       'otp', 'code', 'verification', 'verify',
     ];
-    if (notAPayment.any(lowerText.contains)) return false;
+    if (notATransaction.any(lowerText.contains)) return null;
 
-    // 2. Money coming in is not a spend. Word-bounded so that a genuine
-    //    "paid Rs.500 via credit card" is not mistaken for a credit.
+    // 2. Incoming money (word-bounded).
     const creditTriggers = [
       'credited', 'received', 'refund', 'deposited', 'added',
     ];
     if (creditTriggers.any((t) => RegExp('\\b$t').hasMatch(lowerText))) {
-      return false;
+      return true; // isIncome = true
     }
 
-    // 3. Require evidence of a completed outgoing payment.
-    //    The amount routinely sits between the verb and the payee — e.g.
-    //    "Sent Rs.40.00 from A/c *6394 on 01-08-26 to MUMBAI METRO ONE" — so
-    //    matching the contiguous phrase "sent to" misses real debits. That
-    //    exact Indian Bank format produced no notification at all.
+    // 3. Outgoing money.
     final debitVerb =
         RegExp(r'\b(?:debited|withdrawn|paid|sent|spent|transferred|trf)\b');
-    if (debitVerb.hasMatch(lowerText)) return true;
+    if (debitVerb.hasMatch(lowerText)) return false; // isIncome = false
 
     // Some issuers only ever say "txn" / "transaction" / "payment of".
-    return const ['txn', 'transaction', 'payment of'].any(lowerText.contains);
+    if (const ['txn', 'transaction', 'payment of'].any(lowerText.contains)) {
+      return false; // Default to outgoing
+    }
+
+    return null;
   }
 
   /// Parses transaction amount and merchant from notification text.
